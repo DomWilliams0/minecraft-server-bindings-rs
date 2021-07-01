@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
-use crate::schema::raw::PacketDefinition;
-use serde::*;
-use serde_json::Value;
-use smallvec::SmallVec;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::io::Read;
 use std::str::FromStr;
+
+use serde::*;
+use serde_json::Value;
+
+use crate::schema::raw::PacketDefinition;
 
 mod raw {
     use super::*;
@@ -174,6 +175,7 @@ pub struct Field<'a> {
 
 #[derive(Debug)]
 pub struct Packet<'a> {
+    id: u8,
     /// Snake case
     name: &'a str,
     fields: Vec<Field<'a>>,
@@ -232,6 +234,7 @@ impl raw::PacketTypes {
                 .unwrap();
 
             let mut packet = Packet {
+                id: *packet_id,
                 name: packet_name,
                 fields: Vec::with_capacity(container.len()),
             };
