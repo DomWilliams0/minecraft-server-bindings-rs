@@ -1,6 +1,6 @@
-use std::error::Error;
-use std::path::PathBuf;
 use generator::{ModuleGenerator, Schema};
+use std::error::Error;
+use std::path::{Path, PathBuf};
 
 fn main() {
     let exit = match dew_it() {
@@ -14,23 +14,27 @@ fn main() {
     std::process::exit(exit)
 }
 
+// TODO get versions out of protocolVersions.json and store as constants
+
+struct DeleteDirBomb<'a>(&'a Path);
+
 fn dew_it() -> Result<(), Box<dyn Error>> {
     let args = argwerk::args! {
         /// CLI tool for packet structure generator
-        "generator [-h] --protocol JSON_PATH --out-dir OUT_DIR" {
+        "generator [-h] --protocol-dir DIR" {
             help: bool,
             #[required]
-            protocol: PathBuf, // TODO just pass version?
+            protocol_dir: PathBuf,
             #[required]
             out_dir: PathBuf,
         }
 
-        /// Protocol json file
-        ["-p" | "--protocol", prot] => {
-            protocol = Some(PathBuf::from(prot));
+        /// Protocol directory e.g. minecraft-data/data/pc/1.17
+        ["-p" | "--protocol-dir", dir] => {
+            protocol_dir = Some(PathBuf::from(dir));
         }
 
-        /// Output directory to generate module in
+        /// Crate root dir to generate modules in
         ["-o" | "--out-dir", dir] => {
             out_dir = Some(PathBuf::from(dir));
         }
@@ -43,25 +47,67 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
     }?;
 
     if args.help {
-        return Ok(())
+        return Ok(());
     }
 
-    println!("reading {}", args.protocol.display());
-    let json = std::fs::File::open(args.protocol)?;
+    let protocol_dir: PathBuf = args.protocol_dir;
+    let json_path = protocol_dir.join("protocol.json");
+    if !json_path.is_file() {
+        return Err("protocol.json not found within protocol dir".into());
+    }
+    println!("found protocol.json at {}", json_path.display());
+
+    let version = protocol_dir
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(|s| s.replace('.', "-"))
+        .ok_or("could not extract protocol_version")?;
+    println!("version is {}", version);
+
+    let module_dir = {
+        let mut string = version.replace('-', "_");
+        let mut path: PathBuf = args.out_dir;
+        path.push("packets/src");
+
+        if !path.is_dir() {
+            return Err("could not find packets/src within out directory".into());
+        }
+
+        string.insert(0, 'v');
+        path.push(string);
+        path
+    };
+    println!("module path is {}", module_dir.display());
+
+    println!("parsing {}", json_path.display());
+    let json = std::fs::File::open(json_path)?;
     let schema = Schema::new(json)?;
 
-    let mut out_dir: PathBuf = args.out_dir;
-    out_dir.push("generated");
+    let bomb = DeleteDirBomb(&module_dir);
+    let mut generator = ModuleGenerator::new(&module_dir)?;
 
-    println!("creating {}", out_dir.display());
-    let mut generator = ModuleGenerator::new(out_dir)?;
-
-    println!("generating packets");
     schema.per_state(|name, state| {
         let mut state_gen = generator.emit_state(name)?;
-        state.per_packet(|packet| state_gen.emit_packet(&packet))
+        state.per_packet(|packet| state_gen.emit_packet(&packet))?;
+        state_gen.finish()
     })?;
 
+    bomb.defuse();
     println!("done");
     Ok(())
+}
+
+impl<'a> DeleteDirBomb<'a> {
+    fn defuse(self) {
+        std::mem::forget(self);
+    }
+}
+
+impl Drop for DeleteDirBomb<'_> {
+    fn drop(&mut self) {
+        eprintln!("deleting {} on failure", self.0.display());
+        if let Err(err) = std::fs::remove_dir_all(self.0) {
+            eprintln!("failed to delete directory: {}", err);
+        }
+    }
 }

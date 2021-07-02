@@ -6,9 +6,65 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+packet-derive = { path = "packet-derive" }
 cfg-if = "1.0"
+async-trait = "0.1"
+async-std = "1.9"
+log = "0.4"
+thiserror = "1.0"
+displaydoc = "0.2"
+
+[dev-dependencies]
+futures-await-test = "0.3"
+quickcheck = "0.9"
+quickcheck_macros = "0.9"
 
 [features]
 default = ["latest"]
-latest = ["v1_17"]
-v1_17 = []
+latest = ["v1-17"]
+
+v1-17 = []
+v21w07a = []
+v1-16-4 = []
+v1-16-3 = []
+v1-16-2 = []
+v1-16-1 = []
+v1-16 = []
+v1-16-rc1 = []
+v20w14a = []
+v20w13b = []
+v1-15-2 = []
+v1-15-1 = []
+v1-15 = []
+v1-14-4 = []
+v1-14-3 = []
+v1-14-1 = []
+v1-14 = []
+v1-13-2 = []
+v1-13-2-pre2 = []
+v1-13-2-pre1 = []
+v1-13-1 = []
+v1-13 = []
+v17w50a = []
+v1-12-2 = []
+v1-12-1 = []
+v1-12 = []
+v1-12-pre4 = []
+v17w18b = []
+v17w15a = []
+v1-11-2 = []
+v1-11 = []
+v16w35a = []
+v1-10-2 = []
+v1-10-1 = []
+v1-10 = []
+v1-10-pre1 = []
+v16w20a = []
+v1-9-4 = []
+v1-9-2 = []
+v1-9-1-pre2 = []
+v1-9 = []
+v15w40b = []
+v1-8 = []
+v1-7 = []
+v0-30c = []

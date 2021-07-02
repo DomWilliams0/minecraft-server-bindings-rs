@@ -1,3 +1,3 @@
 [workspace]
 
-members = ["generator", "generator-bin"]
+members = ["generator", "generator-bin", "packets", "packets/packet-derive"]

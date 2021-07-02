@@ -306,7 +306,7 @@ pub struct Field<'a> {
     pub r#type: FieldType,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PacketDirection {
     Clientbound,
     Serverbound,

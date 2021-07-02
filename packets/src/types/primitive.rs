@@ -72,7 +72,10 @@ macro_rules! gen_primitive {
 
                     let read = $name::read_field(&mut cursor).await.unwrap();
                     assert_eq!(cursor.position(), field.size() as u64);
-                    assert_eq!(read.value().partial_cmp(field.value()), Some(std::cmp::Ordering::Equal));
+                    assert_eq!(
+                        read.value().partial_cmp(field.value()),
+                        Some(std::cmp::Ordering::Equal)
+                    );
                 });
             }
         }

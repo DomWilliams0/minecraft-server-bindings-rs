@@ -1,4 +1,6 @@
 pub use array::{RestOfPacketByteArrayField, VarIntThenByteArrayField};
+pub use field::Field;
+pub use packet::*;
 pub use position::PositionField;
 pub use primitive::{
     BoolField, ByteField, DoubleField, FloatField, IntField, LongField, ShortField, UByteField,
@@ -8,6 +10,7 @@ pub use string::{ChatField, IdentifierField, StringField};
 pub use varint::VarIntField;
 
 mod field;
+mod packet;
 
 mod array;
 mod position;
