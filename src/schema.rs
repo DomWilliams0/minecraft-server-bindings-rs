@@ -1,16 +1,56 @@
-#![allow(non_snake_case)]
-
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::io::Read;
 use std::str::FromStr;
 
+use displaydoc::Display;
 use serde::*;
 use serde_json::Value;
+use thiserror::Error;
 
 use crate::schema::raw::PacketDefinition;
 
+#[derive(Debug, Display, Error)]
+pub enum SchemaError {
+    /// IO error: {0}
+    Io(#[from] std::io::Error),
+
+    /// Invalid packet ID {0:#x}
+    InvalidPacketId(i32),
+
+    /// Missing 'packet' key
+    MissingPacketKey,
+
+    /// Bad structure: {0}
+    BadStructure(&'static str),
+
+    /// Deserialization error: {0}
+    Deserializing(#[from] serde_json::Error),
+
+    /// Duplicate object '{0}'
+    Duplicate(&'static str),
+
+    /// Unknown mapper type '{0}'
+    UnknownMapper(String),
+
+    /// Unknown packet definition '{0}'
+    UnknownDefinition(String),
+
+    /// Missing switch or mapper definition for packets
+    BadPacketDefinition,
+
+    /// Unknown field type '{0}'
+    UnknownFieldType(String),
+
+    /// Missing key '{0}' in switch {1}
+    MissingSwitchKey(String, &'static str),
+}
+
+pub type SchemaResult<T> = Result<T, SchemaError>;
+
 mod raw {
+    #![allow(non_snake_case)]
+
     use super::*;
 
     #[derive(Deserialize)]
@@ -74,7 +114,7 @@ mod raw {
 }
 
 #[derive(Debug)]
-struct VarintMappings(BTreeMap<u8, String>); // TODO varint
+struct VarintMappings(BTreeMap<i32, String>);
 
 #[derive(Debug)]
 enum DefinitionType {
@@ -110,7 +150,10 @@ impl<'a> State<'a> {
         Self { root }
     }
 
-    pub fn per_packet<E>(&self, mut f: impl FnMut(Packet)->Result<(), E>) -> Result<(), E> {
+    pub fn per_packet<E: From<SchemaError>>(
+        &self,
+        mut f: impl FnMut(Packet) -> Result<(), E>,
+    ) -> Result<(), E> {
         Self::per_packet_with_direction(
             &self.root.toClient.types,
             PacketDirection::Clientbound,
@@ -124,47 +167,53 @@ impl<'a> State<'a> {
         Ok(())
     }
 
-    fn per_packet_with_direction<E>(
+    fn per_packet_with_direction<E: From<SchemaError>>(
         types: &raw::PacketTypes,
         dir: PacketDirection,
         mut f: impl FnMut(Packet) -> Result<(), E>,
-    ) -> Result<(), E>{
-        // TODO results instead of asserts and panics
+    ) -> Result<(), E> {
+        use SchemaError::*;
 
-        let packet = types.0.get("packet").expect("missing packet key");
+        let packet = types.0.get("packet").ok_or(MissingPacketKey)?;
         let container = extract_specific("container", packet)
             .and_then(|v| v.as_array())
-            .expect("bad packet");
+            .ok_or(BadStructure("packet"))?;
 
         let mut packet_id_mapper = None;
         let mut packet_body_switch = None;
         for def in container.iter() {
-            let def = PacketDefinition::deserialize(def).expect("bad definition");
-            let (def_type, value) = extract(&def.r#type).expect("bad definition");
+            let def = PacketDefinition::deserialize(def).map_err(SchemaError::from)?;
+            let (def_type, value) =
+                extract(&def.r#type).ok_or(BadStructure("packet definition"))?;
             match def_type {
                 "switch" => {
-                    let switch = raw::Switch::deserialize(value).expect("bad switch");
-                    assert!(packet_body_switch.is_none(), "duplicate switch");
+                    let switch = raw::Switch::deserialize(value).map_err(SchemaError::from)?;
+                    if packet_body_switch.is_some() {
+                        return Err(Duplicate("switch").into());
+                    }
                     packet_body_switch = Some(switch);
                 }
                 "mapper" => {
-                    let mapper = raw::Mapper::deserialize(value).expect("bad mapper");
+                    let mapper =
+                        raw::Mapper::deserialize(value).map_err(SchemaError::Deserializing)?;
                     let mappings = match mapper.r#type {
                         "varint" => VarintMappings::from_values(mapper.mappings.into_iter())
-                            .expect("bad mappings"),
-                        ty => panic!("unknown mapper type {:?}", ty),
+                            .ok_or(BadStructure("packet mappings"))?,
+                        ty => return Err(UnknownMapper(ty.to_owned()).into()),
                     };
-                    assert!(packet_id_mapper.is_none(), "duplicate switch");
+                    if packet_body_switch.is_some() {
+                        return Err(Duplicate("mapper").into());
+                    }
                     packet_id_mapper = Some(mappings);
                 }
-                ty => panic!("unknown type {:?}", ty),
+                ty => return Err(UnknownDefinition(ty.to_owned()).into()),
             };
         }
 
         let (packet_body_switch, packet_id_mapper) = match packet_body_switch.zip(packet_id_mapper)
         {
             Some((a, b)) => (a, b),
-            _ => panic!("packet definitions missing switch or mapper"),
+            _ => return Err(BadPacketDefinition.into()),
         };
 
         for (packet_id, packet_name) in packet_id_mapper.0.iter() {
@@ -172,24 +221,23 @@ impl<'a> State<'a> {
                 .fields
                 .get(packet_name)
                 .and_then(|v| v.as_str())
-                .expect("bad packet");
-            let body = types.0.get(key).expect("missing packet body");
+                .ok_or_else(|| MissingSwitchKey(packet_name.clone(), "packet lookup"))?;
+            let body = types.0.get(key).ok_or(BadStructure("packet body"))?;
             let container = extract_specific("container", body)
-                .expect("non-container packet body")
-                .as_array()
-                .unwrap();
+                .and_then(|v| v.as_array())
+                .ok_or(BadStructure("container"))?;
 
             let mut packet = Packet {
-                id: *packet_id,
+                id: u8::try_from(*packet_id)
+                    .map_err(|_| SchemaError::InvalidPacketId(*packet_id))?,
                 direction: dir,
                 name: packet_name,
                 fields: Vec::with_capacity(container.len()),
             };
 
             for field in container {
-                let field = raw::Field::deserialize(field).expect("bad field");
-                let field_ty = FieldType::try_from(&field.r#type)
-                    .unwrap_or_else(|_| panic!("bad field type {:?}", field));
+                let field = raw::Field::deserialize(field).map_err(SchemaError::from)?;
+                let field_ty = FieldType::try_from(&field.r#type)?;
 
                 packet.fields.push(Field {
                     name: field.name,
@@ -277,7 +325,7 @@ impl VarintMappings {
     fn from_values<'a>(values: impl Iterator<Item = (&'a str, Value)>) -> Option<Self> {
         values
             .map(|(k, v)| {
-                let int = u8::from_str_radix(k.trim_start_matches("0x"), 16).ok()?;
+                let int = i32::from_str_radix(k.trim_start_matches("0x"), 16).ok()?;
                 let str = match v {
                     Value::String(s) => s,
                     _ => return None,
@@ -290,7 +338,7 @@ impl VarintMappings {
 }
 
 impl TryFrom<&Value> for FieldType {
-    type Error = ();
+    type Error = SchemaError;
 
     fn try_from(value: &Value) -> Result<Self, Self::Error> {
         if let Some(str) = value.as_str() {
@@ -298,16 +346,15 @@ impl TryFrom<&Value> for FieldType {
         } else if let Some(kv) = extract(value) {
             match kv {
                 ("buffer", obj) => {
-                    let buffer = raw::BufferType::deserialize(obj).map_err(|_| ())?;
+                    let buffer = raw::BufferType::deserialize(obj)?;
                     let resolved_ty = buffer.countType.parse()?;
-                    assert!(!matches!(resolved_ty, FieldType::Buffer{..})); // no nesting
                     Ok(FieldType::Buffer {
                         count_ty: Box::new(resolved_ty),
                     })
                 }
                 ("switch", obj) => Ok(FieldType::Switch),
                 ("array", obj) => {
-                    let array = raw::ArrayType::deserialize(obj).map_err(|_| ())?;
+                    let array = raw::ArrayType::deserialize(obj)?;
                     let resolved_ty = array.countType.parse()?;
                     Ok(FieldType::Array {
                         count_ty: Box::new(resolved_ty),
@@ -320,16 +367,16 @@ impl TryFrom<&Value> for FieldType {
                 }
                 ("bitfield", obj) => Ok(FieldType::Bitfield),
                 ("topBitSetTerminatedArray", obj) => Ok(FieldType::TopBitSetTerminatedArray),
-                (k, _) => unimplemented!("field type {:?}", k),
+                (k, _) => Err(SchemaError::UnknownFieldType(k.into())),
             }
         } else {
-            unreachable!()
+            Err(SchemaError::UnknownFieldType(format!("{:?}", value)))
         }
     }
 }
 
 impl FromStr for FieldType {
-    type Err = ();
+    type Err = SchemaError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
@@ -351,7 +398,7 @@ impl FromStr for FieldType {
             "nbt" => Self::Nbt,
             "optionalNbt" => Self::OptionalNbt,
             "slot" => Self::Slot,
-            _ => return Err(()),
+            _ => return Err(SchemaError::UnknownFieldType(s.into())),
         })
     }
 }

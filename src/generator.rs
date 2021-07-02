@@ -1,4 +1,4 @@
-use crate::schema::{FieldType, Packet, PacketDirection};
+use crate::schema::{FieldType, Packet, PacketDirection, SchemaError};
 use displaydoc::Display;
 use inflector::Inflector;
 use std::fs::File;
@@ -19,6 +19,9 @@ pub struct StateGenerator {
 pub enum GeneratorError {
     /// IO error: {0}
     Io(#[from] std::io::Error),
+
+    /// Schema error: {0}
+    Schema(#[from] SchemaError),
 
     /// Path given is not a directory
     NotADir,
