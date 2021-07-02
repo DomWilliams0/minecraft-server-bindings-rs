@@ -81,7 +81,7 @@ impl VarIntField {
             }
         }
 
-        assert!(n >= 1 && n <= 5, "somehow i32 is bigger than i32");
+        assert!((1..=5).contains(&n), "somehow i32 is bigger than i32");
         Self {
             value,
             bytes,

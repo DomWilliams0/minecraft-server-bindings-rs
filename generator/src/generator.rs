@@ -35,7 +35,7 @@ pub type GeneratorResult<T> = Result<T, GeneratorError>;
 struct EmittableFieldType(FieldType);
 
 impl ModuleGenerator {
-    /// Module dir will be deleted and have mod.rs created
+    /// Module dir will be **deleted** and have mod.rs created
     pub fn new(module_dir: impl Into<PathBuf>) -> GeneratorResult<Self> {
         let module_dir = module_dir.into();
         if module_dir.exists() && !module_dir.is_dir() {
@@ -45,7 +45,7 @@ impl ModuleGenerator {
         if module_dir.exists() {
             std::fs::remove_dir_all(&module_dir)?;
         }
-        std::fs::create_dir(&module_dir)?;
+        std::fs::create_dir_all(&module_dir)?;
 
         Ok(Self { module_dir })
     }
