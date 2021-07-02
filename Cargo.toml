@@ -14,6 +14,7 @@ async-trait = "0.1"
 async-std = "1.9"
 thiserror = "1.0"
 displaydoc = "0.2"
+Inflector = "0.11"
 
 [dev-dependencies]
 futures-await-test = "0.3"

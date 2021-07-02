@@ -96,11 +96,12 @@ impl Schema {
         Ok(Self { root })
     }
 
-    pub fn per_state(&self, mut f: impl FnMut(&str, State)) {
-        f("handshaking", State::new(&self.root.handshaking));
-        f("status", State::new(&self.root.status));
-        f("login", State::new(&self.root.login));
-        f("play", State::new(&self.root.play));
+    pub fn per_state<E>(&self, mut f: impl FnMut(&str, State) -> Result<(), E>) -> Result<(), E> {
+        f("handshaking", State::new(&self.root.handshaking))?;
+        f("status", State::new(&self.root.status))?;
+        f("login", State::new(&self.root.login))?;
+        f("play", State::new(&self.root.play))?;
+        Ok(())
     }
 }
 
@@ -109,12 +110,96 @@ impl<'a> State<'a> {
         Self { root }
     }
 
-    pub fn per_clientbound(&self, f: impl FnMut(Packet)) {
-        self.root.toClient.types.per_packet(f);
+    pub fn per_packet<E>(&self, mut f: impl FnMut(Packet)->Result<(), E>) -> Result<(), E> {
+        Self::per_packet_with_direction(
+            &self.root.toClient.types,
+            PacketDirection::Clientbound,
+            &mut f,
+        )?;
+        Self::per_packet_with_direction(
+            &self.root.toServer.types,
+            PacketDirection::Serverbound,
+            &mut f,
+        )?;
+        Ok(())
     }
 
-    pub fn per_serverbound(&self, f: impl FnMut(Packet)) {
-        self.root.toServer.types.per_packet(f);
+    fn per_packet_with_direction<E>(
+        types: &raw::PacketTypes,
+        dir: PacketDirection,
+        mut f: impl FnMut(Packet) -> Result<(), E>,
+    ) -> Result<(), E>{
+        // TODO results instead of asserts and panics
+
+        let packet = types.0.get("packet").expect("missing packet key");
+        let container = extract_specific("container", packet)
+            .and_then(|v| v.as_array())
+            .expect("bad packet");
+
+        let mut packet_id_mapper = None;
+        let mut packet_body_switch = None;
+        for def in container.iter() {
+            let def = PacketDefinition::deserialize(def).expect("bad definition");
+            let (def_type, value) = extract(&def.r#type).expect("bad definition");
+            match def_type {
+                "switch" => {
+                    let switch = raw::Switch::deserialize(value).expect("bad switch");
+                    assert!(packet_body_switch.is_none(), "duplicate switch");
+                    packet_body_switch = Some(switch);
+                }
+                "mapper" => {
+                    let mapper = raw::Mapper::deserialize(value).expect("bad mapper");
+                    let mappings = match mapper.r#type {
+                        "varint" => VarintMappings::from_values(mapper.mappings.into_iter())
+                            .expect("bad mappings"),
+                        ty => panic!("unknown mapper type {:?}", ty),
+                    };
+                    assert!(packet_id_mapper.is_none(), "duplicate switch");
+                    packet_id_mapper = Some(mappings);
+                }
+                ty => panic!("unknown type {:?}", ty),
+            };
+        }
+
+        let (packet_body_switch, packet_id_mapper) = match packet_body_switch.zip(packet_id_mapper)
+        {
+            Some((a, b)) => (a, b),
+            _ => panic!("packet definitions missing switch or mapper"),
+        };
+
+        for (packet_id, packet_name) in packet_id_mapper.0.iter() {
+            let key = packet_body_switch
+                .fields
+                .get(packet_name)
+                .and_then(|v| v.as_str())
+                .expect("bad packet");
+            let body = types.0.get(key).expect("missing packet body");
+            let container = extract_specific("container", body)
+                .expect("non-container packet body")
+                .as_array()
+                .unwrap();
+
+            let mut packet = Packet {
+                id: *packet_id,
+                direction: dir,
+                name: packet_name,
+                fields: Vec::with_capacity(container.len()),
+            };
+
+            for field in container {
+                let field = raw::Field::deserialize(field).expect("bad field");
+                let field_ty = FieldType::try_from(&field.r#type)
+                    .unwrap_or_else(|_| panic!("bad field type {:?}", field));
+
+                packet.fields.push(Field {
+                    name: field.name,
+                    r#type: field_ty,
+                })
+            }
+
+            f(packet)?;
+        }
+        Ok(())
     }
 }
 
@@ -169,90 +254,23 @@ pub enum FieldType {
 
 #[derive(Debug)]
 pub struct Field<'a> {
-    name: &'a str,
-    r#type: FieldType,
+    pub name: &'a str,
+    pub r#type: FieldType,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum PacketDirection {
+    Clientbound,
+    Serverbound,
 }
 
 #[derive(Debug)]
 pub struct Packet<'a> {
-    id: u8,
+    pub id: u8,
+    pub direction: PacketDirection,
     /// Snake case
-    name: &'a str,
-    fields: Vec<Field<'a>>,
-}
-
-impl raw::PacketTypes {
-    pub fn per_packet(&self, mut f: impl FnMut(Packet)) {
-        // TODO results instead of asserts and panics
-
-        let packet = self.0.get("packet").expect("missing packet key");
-        let container = extract_specific("container", packet)
-            .and_then(|v| v.as_array())
-            .expect("bad packet");
-
-        let mut packet_id_mapper = None;
-        let mut packet_body_switch = None;
-        for def in container.iter() {
-            let def = PacketDefinition::deserialize(def).expect("bad definition");
-            let (def_type, value) = extract(&def.r#type).expect("bad definition");
-            match def_type {
-                "switch" => {
-                    let switch = raw::Switch::deserialize(value).expect("bad switch");
-                    assert!(packet_body_switch.is_none(), "duplicate switch");
-                    packet_body_switch = Some(switch);
-                }
-                "mapper" => {
-                    let mapper = raw::Mapper::deserialize(value).expect("bad mapper");
-                    let mappings = match mapper.r#type {
-                        "varint" => VarintMappings::from_values(mapper.mappings.into_iter())
-                            .expect("bad mappings"),
-                        ty => panic!("unknown mapper type {:?}", ty),
-                    };
-                    assert!(packet_id_mapper.is_none(), "duplicate switch");
-                    packet_id_mapper = Some(mappings);
-                }
-                ty => panic!("unknown type {:?}", ty),
-            };
-        }
-
-        let (packet_body_switch, packet_id_mapper) = match packet_body_switch.zip(packet_id_mapper)
-        {
-            Some((a, b)) => (a, b),
-            _ => panic!("packet definitions missing switch or mapper"),
-        };
-
-        for (packet_id, packet_name) in packet_id_mapper.0.iter() {
-            let key = packet_body_switch
-                .fields
-                .get(packet_name)
-                .and_then(|v| v.as_str())
-                .expect("bad packet");
-            let body = self.0.get(key).expect("missing packet body");
-            let container = extract_specific("container", body)
-                .expect("non-container packet body")
-                .as_array()
-                .unwrap();
-
-            let mut packet = Packet {
-                id: *packet_id,
-                name: packet_name,
-                fields: Vec::with_capacity(container.len()),
-            };
-
-            for field in container {
-                let field = raw::Field::deserialize(field).expect("bad field");
-                let field_ty = FieldType::try_from(&field.r#type)
-                    .unwrap_or_else(|_| panic!("bad field type {:?}", field));
-
-                packet.fields.push(Field {
-                    name: field.name,
-                    r#type: field_ty,
-                })
-            }
-
-            f(packet);
-        }
-    }
+    pub name: &'a str,
+    pub fields: Vec<Field<'a>>,
 }
 
 impl VarintMappings {
