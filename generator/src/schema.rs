@@ -24,8 +24,8 @@ pub enum SchemaError {
     /// Bad structure: {0}
     BadStructure(&'static str),
 
-    /// Deserialization error: {0}
-    Deserializing(#[from] serde_json::Error),
+    /// Failed to deserialize {1}: {0}
+    Deserializing(#[source] serde_json::Error, &'static str),
 
     /// Duplicate object '{0}'
     Duplicate(&'static str),
@@ -97,7 +97,9 @@ mod raw {
     }
     #[derive(Deserialize, Debug)]
     pub struct Field<'a> {
-        pub name: &'a str,
+        pub name: Option<&'a str>,
+        #[serde(default)]
+        pub anon: bool,
         pub r#type: Value,
     }
 
@@ -182,12 +184,14 @@ impl<'a> State<'a> {
         let mut packet_id_mapper = None;
         let mut packet_body_switch = None;
         for def in container.iter() {
-            let def = PacketDefinition::deserialize(def).map_err(SchemaError::from)?;
+            let def = PacketDefinition::deserialize(def)
+                .map_err(|e| Deserializing(e, "packet definition"))?;
             let (def_type, value) =
                 extract(&def.r#type).ok_or(BadStructure("packet definition"))?;
             match def_type {
                 "switch" => {
-                    let switch = raw::Switch::deserialize(value).map_err(SchemaError::from)?;
+                    let switch =
+                        raw::Switch::deserialize(value).map_err(|e| Deserializing(e, "switch"))?;
                     if packet_body_switch.is_some() {
                         return Err(Duplicate("switch").into());
                     }
@@ -195,7 +199,7 @@ impl<'a> State<'a> {
                 }
                 "mapper" => {
                     let mapper =
-                        raw::Mapper::deserialize(value).map_err(SchemaError::Deserializing)?;
+                        raw::Mapper::deserialize(value).map_err(|e| Deserializing(e, "mapper"))?;
                     let mappings = match mapper.r#type {
                         "varint" => VarintMappings::from_values(mapper.mappings.into_iter())
                             .ok_or(BadStructure("packet mappings"))?,
@@ -236,11 +240,14 @@ impl<'a> State<'a> {
             };
 
             for field in container {
-                let field = raw::Field::deserialize(field).map_err(SchemaError::from)?;
+                let field =
+                    raw::Field::deserialize(field).map_err(|e| Deserializing(e, "field"))?;
                 let field_ty = FieldType::try_from(&field.r#type)?;
+                assert!(field.name.is_some() || field.anon); // TODO result
 
+                // TODO multiple anons?
                 packet.fields.push(Field {
-                    name: field.name,
+                    name: field.name.unwrap_or("anon"),
                     r#type: field_ty,
                 })
             }
@@ -298,6 +305,7 @@ pub enum FieldType {
     Option(Box<FieldType>),
     Bitfield,                 // TODO
     TopBitSetTerminatedArray, // TODO
+    Tags,                     // TODO
 }
 
 #[derive(Debug)]
@@ -346,7 +354,8 @@ impl TryFrom<&Value> for FieldType {
         } else if let Some(kv) = extract(value) {
             match kv {
                 ("buffer", obj) => {
-                    let buffer = raw::BufferType::deserialize(obj)?;
+                    let buffer = raw::BufferType::deserialize(obj)
+                        .map_err(|e| SchemaError::Deserializing(e, "buffer"))?;
                     let resolved_ty = buffer.countType.parse()?;
                     Ok(FieldType::Buffer {
                         count_ty: Box::new(resolved_ty),
@@ -354,7 +363,8 @@ impl TryFrom<&Value> for FieldType {
                 }
                 ("switch", obj) => Ok(FieldType::Switch),
                 ("array", obj) => {
-                    let array = raw::ArrayType::deserialize(obj)?;
+                    let array = raw::ArrayType::deserialize(obj)
+                        .map_err(|e| SchemaError::Deserializing(e, "array"))?;
                     let resolved_ty = array.countType.parse()?;
                     Ok(FieldType::Array {
                         count_ty: Box::new(resolved_ty),
@@ -398,6 +408,7 @@ impl FromStr for FieldType {
             "nbt" => Self::Nbt,
             "optionalNbt" => Self::OptionalNbt,
             "slot" => Self::Slot,
+            "tags" => Self::Tags,
             _ => return Err(SchemaError::UnknownFieldType(s.into())),
         })
     }

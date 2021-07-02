@@ -6,7 +6,12 @@ fn main() {
     let exit = match dew_it() {
         Ok(_) => 0,
         Err(err) => {
-            eprintln!("error: {}", err);
+            println!("error: {}", err);
+            let mut err = &*err;
+            while let Some(cause) = err.source() {
+                println!(" * error: {}", err);
+                err = cause;
+            }
             1
         }
     };
@@ -53,7 +58,11 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
     let protocol_dir: PathBuf = args.protocol_dir;
     let json_path = protocol_dir.join("protocol.json");
     if !json_path.is_file() {
-        return Err("protocol.json not found within protocol dir".into());
+        return Err(format!(
+            "protocol.json not found within protocol dir '{}'",
+            protocol_dir.display()
+        )
+        .into());
     }
     println!("found protocol.json at {}", json_path.display());
 
