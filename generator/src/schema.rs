@@ -8,7 +8,7 @@ use serde::*;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::schema::raw::PacketDefinition;
+use crate::schema::raw::{PacketDefinition };
 use std::error::Error;
 use std::fmt::Debug;
 use std::option::Option::None;
@@ -114,13 +114,24 @@ mod raw {
         pub countType: &'a str,
         pub r#type: Value,
     }
+    #[derive(Deserialize, Debug, Clone)]
+    pub struct ProtocolVersion {
+        #[serde(rename = "minecraftVersion")]
+        pub mc_version: String,
+        pub version: u32,
+        #[serde(rename = "majorVersion")]
+        pub major_version: String,
+    }
 }
+
+pub use raw::ProtocolVersion;
 
 #[derive(Debug)]
 struct VarintMappings(BTreeMap<i32, String>);
 
 pub struct Schema {
     root: raw::ProtocolRoot,
+    version: raw::ProtocolVersion,
 }
 
 pub struct State<'a> {
@@ -143,10 +154,13 @@ pub struct ContextError(Box<String>);
 pub struct ContextualError(Box<dyn Error>, Option<ContextError>);
 
 impl Schema {
-    pub fn new(json: impl Read) -> serde_json::Result<Self> {
-        let root = serde_json::from_reader(json)?;
-        Ok(Self { root })
+    pub fn new(protocol: impl Read, version: impl Read) -> serde_json::Result<Self> {
+        let version = serde_json::from_reader::<_, ProtocolVersion>(version)?;
+        let root = serde_json::from_reader(protocol)?;
+        Ok(Self { root, version })
     }
+
+    pub fn versions(&self) -> &raw::ProtocolVersion {&self.version}
 
     pub fn per_state(
         &self,

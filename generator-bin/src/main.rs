@@ -19,8 +19,6 @@ fn main() {
     std::process::exit(exit)
 }
 
-// TODO get versions out of protocolVersions.json and store as constants
-
 struct DeleteDirBomb<'a>(&'a Path);
 
 fn dew_it() -> Result<(), Box<dyn Error>> {
@@ -66,6 +64,16 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
     }
     println!("found protocol.json at {}", json_path.display());
 
+    let version_file = protocol_dir.join("version.json");
+    if !version_file.is_file() {
+        return Err(format!(
+            "version.json not found within protocol dir '{}'",
+            protocol_dir.display()
+        )
+            .into());
+    }
+    println!("found version.json at {}", version_file.display());
+
     let version = protocol_dir
         .file_name()
         .and_then(|s| s.to_str())
@@ -88,12 +96,13 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
     };
     println!("module path is {}", module_dir.display());
 
-    println!("parsing {}", json_path.display());
-    let json = std::fs::File::open(json_path)?;
-    let schema = Schema::new(json)?;
+    let protocol_json = std::fs::File::open(json_path)?;
+    let version_json = std::fs::File::open(version_file)?;
+    let schema = Schema::new(protocol_json, version_json)?;
 
     let bomb = DeleteDirBomb(&module_dir);
     let mut generator = ModuleGenerator::new(&module_dir)?;
+    generator.emit_version_constants(schema.versions())?;
 
     schema.per_state(|name, state| {
         let mut state_gen = generator.emit_state(name)?;
