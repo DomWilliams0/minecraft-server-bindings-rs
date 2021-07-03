@@ -8,7 +8,7 @@ use serde::*;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::schema::raw::{PacketDefinition };
+use crate::schema::raw::PacketDefinition;
 use std::error::Error;
 use std::fmt::Debug;
 use std::option::Option::None;
@@ -160,7 +160,9 @@ impl Schema {
         Ok(Self { root, version })
     }
 
-    pub fn versions(&self) -> &raw::ProtocolVersion {&self.version}
+    pub fn versions(&self) -> &raw::ProtocolVersion {
+        &self.version
+    }
 
     pub fn per_state(
         &self,

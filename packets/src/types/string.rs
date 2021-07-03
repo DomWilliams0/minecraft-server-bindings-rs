@@ -2,10 +2,10 @@ use std::convert::TryFrom;
 
 use async_std::io::prelude::*;
 
-use crate::types::field::{Field, FieldError, FieldResult};
-use crate::types::VarIntField;
+use crate::types::field::Field;
+use crate::types::{PacketError, PacketResult, VarIntField};
 use async_trait::async_trait;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug)]
 pub struct StringField {
@@ -26,6 +26,10 @@ impl StringField {
         }
     }
 
+    pub fn new_chat(value: impl Display) -> Self {
+        Self::new(format!(r#"{{"text": "{}"}}"#, value))
+    }
+
     pub fn take(self) -> String {
         self.value
     }
@@ -43,60 +47,23 @@ impl Field for StringField {
         self.length.size() + self.length.value() as usize
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let length = VarIntField::read_field(r).await?.value() as usize;
         let value = {
             let mut vec = vec![0u8; length];
-            r.read_exact(&mut vec).await.map_err(FieldError::Io)?;
+            r.read_exact(&mut vec).await.map_err(PacketError::Io)?;
             String::from_utf8(vec)?
         };
 
         Ok(Self::new(value))
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
         self.length.write_field(w).await?;
 
         w.write_all(self.value.as_bytes())
             .await
-            .map_err(FieldError::Io)
-    }
-}
-
-pub struct ChatField {
-    // TODO colors and stuff
-    string: StringField,
-}
-
-impl ChatField {
-    // TODO pass in fmt args somehow to avoid double allocation
-    pub fn new(value: String) -> Self {
-        Self {
-            string: StringField::new(format!(r#"{{"text": "{}"}}"#, value)),
-        }
-    }
-}
-
-#[async_trait]
-impl Field for ChatField {
-    type Displayable = String;
-
-    fn value(&self) -> &Self::Displayable {
-        &self.string.value()
-    }
-
-    fn size(&self) -> usize {
-        self.string.size()
-    }
-
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
-        Ok(Self {
-            string: StringField::read_field(r).await?,
-        })
-    }
-
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
-        self.string.write_field(w).await
+            .map_err(PacketError::Io)
     }
 }
 
@@ -130,6 +97,12 @@ impl IdentifierField {
     }
 }
 
+impl From<StringField> for IdentifierField {
+    fn from(s: StringField) -> Self {
+        Self::new(s.take())
+    }
+}
+
 impl Debug for IdentifierField {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{}", self.namespace(), self.location())
@@ -148,13 +121,13 @@ impl Field for IdentifierField {
         self.string.size()
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         StringField::read_field(r)
             .await
             .map(|s| Self::new(s.take()))
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
         self.string.write_field(w).await
     }
 }

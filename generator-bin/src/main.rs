@@ -70,7 +70,7 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
             "version.json not found within protocol dir '{}'",
             protocol_dir.display()
         )
-            .into());
+        .into());
     }
     println!("found version.json at {}", version_file.display());
 

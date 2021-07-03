@@ -6,7 +6,7 @@ pub use primitive::{
     BoolField, ByteField, DoubleField, FloatField, IntField, LongField, ShortField, UByteField,
     UShortField,
 };
-pub use string::{ChatField, IdentifierField, StringField};
+pub use string::{IdentifierField, StringField};
 pub use varint::VarIntField;
 
 mod field;

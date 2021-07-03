@@ -1,4 +1,3 @@
-use crate::types::field::FieldError;
 use crate::types::*;
 use async_std::io;
 use async_std::io::Cursor;
@@ -17,9 +16,6 @@ pub enum PacketError {
     /// IO error: {0}
     Io(#[from] io::Error),
 
-    /// {0}
-    Field(#[from] FieldError),
-
     // used in macros
     /// Expected packet ID {expected:#x} but got {actual:#x}
     UnexpectedPacket {
@@ -33,6 +29,12 @@ pub enum PacketError {
 
     /// Invalid unicode string: {0}
     BadString(#[from] FromUtf8Error),
+
+    /// Varint is longer than the max of 5 bytes (got {0} bytes)
+    BadVarInt(usize),
+
+    /// Bad bool value, must be 0 or 1 (got {0})
+    BadBool(u8),
 }
 
 pub struct PacketBody {

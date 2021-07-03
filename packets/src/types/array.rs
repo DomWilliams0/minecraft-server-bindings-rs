@@ -1,5 +1,5 @@
-use crate::types::field::{Field, FieldError, FieldResult};
-use crate::types::VarIntField;
+use crate::types::field::Field;
+use crate::types::{PacketError, PacketResult, VarIntField};
 use async_std::io::prelude::*;
 use async_trait::async_trait;
 use std::fmt::{Display, Formatter};
@@ -34,10 +34,10 @@ impl Field for VarIntThenByteArrayField {
         self.length.size() + self.length.value() as usize
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let length = VarIntField::read_field(r).await?;
         let mut array = vec![0u8; length.value() as usize];
-        r.read_exact(&mut array).await.map_err(FieldError::Io)?;
+        r.read_exact(&mut array).await.map_err(PacketError::Io)?;
 
         Ok(Self {
             length,
@@ -45,9 +45,9 @@ impl Field for VarIntThenByteArrayField {
         })
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
         self.length.write_field(w).await?;
-        w.write_all(&self.array.0).await.map_err(FieldError::Io)?;
+        w.write_all(&self.array.0).await.map_err(PacketError::Io)?;
         Ok(())
     }
 }
@@ -74,14 +74,14 @@ impl Field for RestOfPacketByteArrayField {
         (self.0).0.len()
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let mut vec = Vec::new();
-        let n = r.read_to_end(&mut vec).await.map_err(FieldError::Io)?;
+        let n = r.read_to_end(&mut vec).await.map_err(PacketError::Io)?;
         debug_assert_ne!(n, 0);
         Ok(Self(ByteArray(vec)))
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
         unimplemented!()
     }
 }

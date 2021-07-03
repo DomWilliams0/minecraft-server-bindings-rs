@@ -1,4 +1,5 @@
-use crate::types::field::{Field, FieldError, FieldResult};
+use crate::types::field::Field;
+use crate::types::{PacketError, PacketResult};
 use async_std::io::prelude::*;
 use async_trait::async_trait;
 use std::ops::BitAnd;
@@ -22,7 +23,7 @@ impl Field for VarIntField {
         self.byte_count as usize
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let mut out = 0u32;
         let mut n = 0;
         let mut bytes = [0u8; 5];
@@ -30,7 +31,7 @@ impl Field for VarIntField {
         loop {
             let byte = {
                 let mut buf = [0u8; 1];
-                r.read_exact(&mut buf).await.map_err(FieldError::Io)?;
+                r.read_exact(&mut buf).await.map_err(PacketError::Io)?;
                 buf[0]
             };
             bytes[n] = byte;
@@ -44,7 +45,7 @@ impl Field for VarIntField {
         }
 
         if n > 5 {
-            Err(FieldError::BadVarInt(n))
+            Err(PacketError::BadVarInt(n))
         } else {
             let value = unsafe { std::mem::transmute(out) };
             Ok(Self {
@@ -54,8 +55,8 @@ impl Field for VarIntField {
             })
         }
     }
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
-        w.write_all(self.bytes()).await.map_err(FieldError::Io)
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
+        w.write_all(self.bytes()).await.map_err(PacketError::Io)
     }
 }
 

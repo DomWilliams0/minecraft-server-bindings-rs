@@ -1,5 +1,5 @@
-use crate::types::field::{Field, FieldResult};
-use crate::types::LongField;
+use crate::types::field::Field;
+use crate::types::{LongField, PacketResult};
 use async_std::io::prelude::*;
 use async_trait::async_trait;
 use std::fmt::{Display, Formatter};
@@ -24,7 +24,7 @@ impl Field for PositionField {
         8
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let long = LongField::read_field(r).await?;
         // let long = u64::from_ne_bytes(long.value().to_ne_bytes());
         let long = *long.value();
@@ -50,7 +50,7 @@ impl Field for PositionField {
         })
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
         let x = self.x as u64;
         let y = self.y as u64;
         let z = self.z as u64;

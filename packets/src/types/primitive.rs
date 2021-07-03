@@ -1,6 +1,7 @@
 use std::mem;
 
-use crate::types::field::{Field, FieldError, FieldResult};
+use crate::types::field::Field;
+use crate::types::{PacketError, PacketResult};
 use async_std::io::prelude::*;
 use async_trait::async_trait;
 
@@ -28,17 +29,17 @@ macro_rules! gen_primitive {
                 mem::size_of::<$int>()
             }
 
-            async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<$name> {
+            async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<$name> {
                 let mut buf = [0u8; mem::size_of::<$int>()];
-                r.read_exact(&mut buf).await.map_err(FieldError::Io)?;
+                r.read_exact(&mut buf).await.map_err(PacketError::Io)?;
 
                 let val = $int::from_be_bytes(buf);
                 Ok(Self(val))
             }
 
-            async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+            async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
                 let buf = $int::to_be_bytes(self.0);
-                w.write_all(&buf).await.map_err(FieldError::Io)
+                w.write_all(&buf).await.map_err(PacketError::Io)
             }
         }
 
@@ -113,20 +114,20 @@ impl Field for BoolField {
         1
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> FieldResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
         let mut buf = [0u8; 1];
-        r.read_exact(&mut buf).await.map_err(FieldError::Io)?;
+        r.read_exact(&mut buf).await.map_err(PacketError::Io)?;
 
         match buf[0] {
             0 => Ok(Self(false)),
             1 => Ok(Self(true)),
-            i => Err(FieldError::BadBool(i)),
+            i => Err(PacketError::BadBool(i)),
         }
     }
 
-    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> FieldResult<()> {
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
         let buf = [self.0 as u8];
-        w.write_all(&buf).await.map_err(FieldError::Io)
+        w.write_all(&buf).await.map_err(PacketError::Io)
     }
 }
 

@@ -1,4 +1,4 @@
-mod types;
+pub mod types;
 
 macro_rules! version {
     ($module:ident, $feature:expr) => {
