@@ -9,6 +9,9 @@ use serde_json::Value;
 use thiserror::Error;
 
 use crate::schema::raw::PacketDefinition;
+use std::error::Error;
+use std::fmt::Debug;
+use std::option::Option::None;
 
 #[derive(Debug, Display, Error)]
 pub enum SchemaError {
@@ -45,8 +48,6 @@ pub enum SchemaError {
     /// Missing key '{0}' in switch {1}
     MissingSwitchKey(String, &'static str),
 }
-
-pub type SchemaResult<T> = Result<T, SchemaError>;
 
 mod raw {
     #![allow(non_snake_case)]
@@ -118,12 +119,6 @@ mod raw {
 #[derive(Debug)]
 struct VarintMappings(BTreeMap<i32, String>);
 
-#[derive(Debug)]
-enum DefinitionType {
-    Mapper(VarintMappings),
-    Switch(raw::Switch),
-}
-
 pub struct Schema {
     root: raw::ProtocolRoot,
 }
@@ -132,13 +127,31 @@ pub struct State<'a> {
     root: &'a raw::ProtocolState,
 }
 
+pub struct ErrorContext(Option<String>);
+struct CurrentErrorContext<'a> {
+    wat: Option<&'static str>,
+    arg: Option<&'a dyn Debug>,
+    ctx: &'a mut ErrorContext,
+}
+
+#[derive(Error, Debug, Display)]
+/// {0}
+pub struct ContextError(Box<String>);
+
+#[derive(Debug, Display)]
+/// {0}
+pub struct ContextualError(Box<dyn Error>, Option<ContextError>);
+
 impl Schema {
     pub fn new(json: impl Read) -> serde_json::Result<Self> {
         let root = serde_json::from_reader(json)?;
         Ok(Self { root })
     }
 
-    pub fn per_state<E>(&self, mut f: impl FnMut(&str, State) -> Result<(), E>) -> Result<(), E> {
+    pub fn per_state(
+        &self,
+        mut f: impl FnMut(&str, State) -> Result<(), Box<dyn Error>>,
+    ) -> Result<(), Box<dyn Error>> {
         f("handshaking", State::new(&self.root.handshaking))?;
         f("status", State::new(&self.root.status))?;
         f("login", State::new(&self.root.login))?;
@@ -152,52 +165,68 @@ impl<'a> State<'a> {
         Self { root }
     }
 
-    pub fn per_packet<E: From<SchemaError>>(
+    pub fn per_packet(
         &self,
-        mut f: impl FnMut(Packet) -> Result<(), E>,
-    ) -> Result<(), E> {
+        mut f: impl FnMut(Packet) -> Result<(), Box<dyn Error>>,
+    ) -> Result<(), ContextualError> {
+        let mut context = ErrorContext(None);
         Self::per_packet_with_direction(
             &self.root.toClient.types,
             PacketDirection::Clientbound,
+            &mut context,
             &mut f,
-        )?;
-        Self::per_packet_with_direction(
-            &self.root.toServer.types,
-            PacketDirection::Serverbound,
-            &mut f,
-        )?;
+        )
+        .and_then(|_| {
+            Self::per_packet_with_direction(
+                &self.root.toServer.types,
+                PacketDirection::Serverbound,
+                &mut context,
+                &mut f,
+            )
+        })
+        .map_err(|e| ContextualError(e, context.take()))?;
         Ok(())
     }
 
-    fn per_packet_with_direction<E: From<SchemaError>>(
+    fn per_packet_with_direction(
         types: &raw::PacketTypes,
         dir: PacketDirection,
-        mut f: impl FnMut(Packet) -> Result<(), E>,
-    ) -> Result<(), E> {
+        context: &mut ErrorContext,
+        mut f: impl FnMut(Packet) -> Result<(), Box<dyn Error>>,
+    ) -> Result<(), Box<dyn Error>> {
         use SchemaError::*;
 
+        let packet_id_mapper; // keep alive longer than error context
+        let mut context = context.current();
+
+        context.currently("finding packet map");
         let packet = types.0.get("packet").ok_or(MissingPacketKey)?;
         let container = extract_specific("container", packet)
             .and_then(|v| v.as_array())
             .ok_or(BadStructure("packet"))?;
 
-        let mut packet_id_mapper = None;
-        let mut packet_body_switch = None;
+        let mut packet_id_mapper_opt = None;
+        let mut packet_body_switch_opt = None;
         for def in container.iter() {
+            context.currently_with("parsing packet definition", def);
             let def = PacketDefinition::deserialize(def)
                 .map_err(|e| Deserializing(e, "packet definition"))?;
             let (def_type, value) =
                 extract(&def.r#type).ok_or(BadStructure("packet definition"))?;
+
+            context.currently("parsing packet definition");
             match def_type {
                 "switch" => {
+                    context.currently("parsing packet switch");
                     let switch =
                         raw::Switch::deserialize(value).map_err(|e| Deserializing(e, "switch"))?;
-                    if packet_body_switch.is_some() {
+                    if packet_body_switch_opt.is_some() {
                         return Err(Duplicate("switch").into());
                     }
-                    packet_body_switch = Some(switch);
+                    packet_body_switch_opt = Some(switch);
                 }
                 "mapper" => {
+                    context.currently("parsing packet mapper");
                     let mapper =
                         raw::Mapper::deserialize(value).map_err(|e| Deserializing(e, "mapper"))?;
                     let mappings = match mapper.r#type {
@@ -205,22 +234,27 @@ impl<'a> State<'a> {
                             .ok_or(BadStructure("packet mappings"))?,
                         ty => return Err(UnknownMapper(ty.to_owned()).into()),
                     };
-                    if packet_body_switch.is_some() {
+                    if packet_body_switch_opt.is_some() {
                         return Err(Duplicate("mapper").into());
                     }
-                    packet_id_mapper = Some(mappings);
+                    packet_id_mapper_opt = Some(mappings);
                 }
                 ty => return Err(UnknownDefinition(ty.to_owned()).into()),
             };
         }
 
-        let (packet_body_switch, packet_id_mapper) = match packet_body_switch.zip(packet_id_mapper)
-        {
-            Some((a, b)) => (a, b),
+        context.currently("validating mapper and switch");
+        let packet_body_switch;
+        match packet_body_switch_opt.zip(packet_id_mapper_opt) {
+            Some((a, b)) => {
+                packet_body_switch = a;
+                packet_id_mapper = b;
+            }
             _ => return Err(BadPacketDefinition.into()),
         };
 
         for (packet_id, packet_name) in packet_id_mapper.0.iter() {
+            context.currently_with("mapping packet", packet_name);
             let key = packet_body_switch
                 .fields
                 .get(packet_name)
@@ -240,6 +274,7 @@ impl<'a> State<'a> {
             };
 
             for field in container {
+                context.currently_with("parsing field", field);
                 let field =
                     raw::Field::deserialize(field).map_err(|e| Deserializing(e, "field"))?;
                 let field_ty = FieldType::try_from(&field.r#type)?;
@@ -254,7 +289,50 @@ impl<'a> State<'a> {
 
             f(packet)?;
         }
+
+        context.defuse();
         Ok(())
+    }
+}
+
+impl ErrorContext {
+    fn current(&mut self) -> CurrentErrorContext {
+        CurrentErrorContext {
+            ctx: self,
+            wat: None,
+            arg: None,
+        }
+    }
+
+    fn take(mut self) -> Option<ContextError> {
+        self.0.take().map(|s| ContextError(Box::new(s)))
+    }
+}
+
+impl<'a> CurrentErrorContext<'a> {
+    fn currently(&mut self, wat: &'static str) {
+        self.wat = Some(wat);
+    }
+
+    fn currently_with(&mut self, wat: &'static str, arg: &'a (impl Debug + 'static)) {
+        self.wat = Some(wat);
+        self.arg = Some(arg);
+    }
+
+    fn defuse(self) {
+        std::mem::forget(self);
+    }
+}
+
+impl Drop for CurrentErrorContext<'_> {
+    fn drop(&mut self) {
+        if let Some(wat) = self.wat {
+            let s = match self.arg.take() {
+                Some(arg) => format!("{}: {:?}", wat, arg),
+                None => wat.to_owned(),
+            };
+            (self.ctx).0 = Some(s);
+        }
     }
 }
 
@@ -411,5 +489,11 @@ impl FromStr for FieldType {
             "tags" => Self::Tags,
             _ => return Err(SchemaError::UnknownFieldType(s.into())),
         })
+    }
+}
+
+impl Error for ContextualError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.1.as_ref().map(|s| s as &dyn Error)
     }
 }

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub use self::generator::{GeneratorError, ModuleGenerator};
 pub use schema::{Schema, SchemaError};
 

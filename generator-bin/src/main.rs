@@ -9,7 +9,7 @@ fn main() {
             println!("error: {}", err);
             let mut err = &*err;
             while let Some(cause) = err.source() {
-                println!(" * error: {}", err);
+                println!(" * error: {}", cause);
                 err = cause;
             }
             1
@@ -97,8 +97,12 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
 
     schema.per_state(|name, state| {
         let mut state_gen = generator.emit_state(name)?;
-        state.per_packet(|packet| state_gen.emit_packet(&packet))?;
-        state_gen.finish()
+        state.per_packet(|packet| {
+            state_gen.emit_packet(&packet)?;
+            Ok(())
+        })?;
+        state_gen.finish()?;
+        Ok(())
     })?;
 
     bomb.defuse();
