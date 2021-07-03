@@ -65,7 +65,7 @@ pub mod client {
 		pub entity_id: VarIntField,
 		// TODO pub entity_uuid: Uuid,
 		pub title: VarIntField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub direction: UByteField,
 	}
 */
@@ -88,7 +88,7 @@ pub mod client {
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x05]
 	pub struct SculkVibrationSignal {
-		// TODO pub source_position: Position,
+		pub source_position: PositionField<1073741839>,
 		pub destination_identifier: StringField,
 		// TODO pub destination: Switch,
 		pub arrival_ticks: VarIntField,
@@ -111,56 +111,52 @@ pub mod client {
 	}
 */
 
-/* TODO incomplete struct AcknowledgePlayerDigging
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x08]
 	pub struct AcknowledgePlayerDigging {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub block: VarIntField,
 		pub status: VarIntField,
 		pub successful: BoolField,
 	}
-*/
 
-/* TODO incomplete struct BlockBreakAnimation
+
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x09]
 	pub struct BlockBreakAnimation {
 		pub entity_id: VarIntField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub destroy_stage: ByteField,
 	}
-*/
+
 
 /* TODO incomplete struct TileEntityData
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x0a]
 	pub struct TileEntityData {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub action: UByteField,
 		// TODO pub nbt_data: OptionalNbt,
 	}
 */
 
-/* TODO incomplete struct BlockAction
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x0b]
 	pub struct BlockAction {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub byte_1: UByteField,
 		pub byte_2: UByteField,
 		pub block_id: VarIntField,
 	}
-*/
 
-/* TODO incomplete struct BlockChange
+
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x0c]
 	pub struct BlockChange {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub r#type: VarIntField,
 	}
-*/
+
 
 /* TODO incomplete struct BossBar
 	#[derive(ClientBoundPacket)]
@@ -363,16 +359,15 @@ pub mod client {
 	}
 */
 
-/* TODO incomplete struct WorldEvent
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x22]
 	pub struct WorldEvent {
 		pub effect_id: IntField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub data: IntField,
 		pub global: BoolField,
 	}
-*/
+
 
 /* TODO incomplete struct WorldParticles
 	#[derive(ClientBoundPacket)]
@@ -527,13 +522,12 @@ pub mod client {
 	}
 
 
-/* TODO incomplete struct OpenSignEntity
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x2f]
 	pub struct OpenSignEntity {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 	}
-*/
+
 
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x30]
@@ -731,13 +725,12 @@ pub mod client {
 	}
 
 
-/* TODO incomplete struct SpawnPosition
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x43]
 	pub struct SpawnPosition {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 	}
-*/
+
 
 	#[derive(ClientBoundPacket)]
 	#[packet_id = 0x44]
@@ -1001,14 +994,13 @@ pub mod server {
 	}
 
 
-/* TODO incomplete struct QueryBlockNbt
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x01]
 	pub struct QueryBlockNbt {
 		pub transaction_id: VarIntField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x02]
@@ -1129,15 +1121,14 @@ pub mod server {
 	}
 */
 
-/* TODO incomplete struct GenerateStructure
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x0f]
 	pub struct GenerateStructure {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub levels: VarIntField,
 		pub keep_jigsaws: BoolField,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x10]
@@ -1233,15 +1224,14 @@ pub mod server {
 	}
 
 
-/* TODO incomplete struct BlockDig
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x1b]
 	pub struct BlockDig {
 		pub status: ByteField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub face: ByteField,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x1c]
@@ -1322,16 +1312,15 @@ pub mod server {
 	}
 
 
-/* TODO incomplete struct UpdateCommandBlock
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x26]
 	pub struct UpdateCommandBlock {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub command: StringField,
 		pub mode: VarIntField,
 		pub flags: UByteField,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x27]
@@ -1351,24 +1340,22 @@ pub mod server {
 	}
 */
 
-/* TODO incomplete struct UpdateJigsawBlock
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x29]
 	pub struct UpdateJigsawBlock {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub name: StringField,
 		pub target: StringField,
 		pub pool: StringField,
 		pub final_state: StringField,
 		pub joint_type: StringField,
 	}
-*/
 
-/* TODO incomplete struct UpdateStructureBlock
+
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x2a]
 	pub struct UpdateStructureBlock {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub action: VarIntField,
 		pub mode: VarIntField,
 		pub name: StringField,
@@ -1385,19 +1372,18 @@ pub mod server {
 		pub seed: VarIntField,
 		pub flags: UByteField,
 	}
-*/
 
-/* TODO incomplete struct UpdateSign
+
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x2b]
 	pub struct UpdateSign {
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub text_1: StringField,
 		pub text_2: StringField,
 		pub text_3: StringField,
 		pub text_4: StringField,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x2c]
@@ -1414,19 +1400,18 @@ pub mod server {
 	}
 */
 
-/* TODO incomplete struct BlockPlace
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x2e]
 	pub struct BlockPlace {
 		pub hand: VarIntField,
-		// TODO pub location: Position,
+		pub location: PositionField<1073741839>,
 		pub direction: VarIntField,
 		pub cursor_x: FloatField,
 		pub cursor_y: FloatField,
 		pub cursor_z: FloatField,
 		pub inside_block: BoolField,
 	}
-*/
+
 
 	#[derive(ServerBoundPacket)]
 	#[packet_id = 0x2f]

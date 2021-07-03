@@ -2,8 +2,11 @@ use proc_macro::TokenStream;
 use proc_macro_error::*;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{Ident, Meta, MetaNameValue};
+use syn::{Ident, Meta, MetaNameValue, PathArguments};
 
+use itertools::Itertools;
+use std::borrow::Cow;
+use std::str::FromStr;
 use syn::{Data, DeriveInput, Type};
 
 fn extract_packet_id(item: &DeriveInput) -> i32 {
@@ -27,7 +30,9 @@ fn extract_packet_id(item: &DeriveInput) -> i32 {
     }
 }
 
-fn extract_fields(item: &DeriveInput) -> (Vec<&Ident>, impl Iterator<Item = &Ident>) {
+fn extract_fields(
+    item: &DeriveInput,
+) -> (Vec<&Ident>, impl Iterator<Item = Cow<'_, syn::Type>> + '_) {
     let r#struct = match &item.data {
         Data::Struct(r#struct) => r#struct,
         _ => abort_call_site!("Packet must be a struct"),
@@ -40,7 +45,29 @@ fn extract_fields(item: &DeriveInput) -> (Vec<&Ident>, impl Iterator<Item = &Ide
         .collect();
 
     let field_types = r#struct.fields.iter().map(|f| match &f.ty {
-        Type::Path(p) => p.path.get_ident().unwrap(),
+        Type::Path(p) => {
+            if p.path.get_ident().is_some() {
+                Cow::Borrowed(&f.ty)
+            } else {
+                let ident = p.path.segments.iter().map(|s| &s.ident).join("::");
+                let generic_segment = p.path.segments.last().expect("no last segment");
+                let generic = match &generic_segment.arguments {
+                    PathArguments::AngleBracketed(generic) => generic
+                        .args
+                        .iter()
+                        .map(|arg| arg.to_token_stream())
+                        .join(", "),
+                    _ => panic!("unsupported generic"),
+                };
+
+                // TODO this probably shouldn't be constructed as a string
+                let string = format!("{}::<{}>", ident, generic);
+                Cow::Owned(
+                    syn::parse::<syn::Type>(TokenStream::from_str(&string).unwrap())
+                        .expect("bad generic type"),
+                )
+            }
+        }
         _ => abort!(f.span(), "field should be a field type"),
     });
 

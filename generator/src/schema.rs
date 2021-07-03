@@ -160,7 +160,7 @@ impl Schema {
         Ok(Self { root, version })
     }
 
-    pub fn versions(&self) -> &raw::ProtocolVersion {
+    pub fn version(&self) -> &raw::ProtocolVersion {
         &self.version
     }
 

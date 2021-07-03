@@ -101,8 +101,7 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
     let schema = Schema::new(protocol_json, version_json)?;
 
     let bomb = DeleteDirBomb(&module_dir);
-    let mut generator = ModuleGenerator::new(&module_dir)?;
-    generator.emit_version_constants(schema.versions())?;
+    let mut generator = ModuleGenerator::new(&module_dir, schema.version())?;
 
     schema.per_state(|name, state| {
         let mut state_gen = generator.emit_state(name)?;

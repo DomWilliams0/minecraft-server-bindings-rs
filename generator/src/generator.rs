@@ -6,16 +6,19 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use std::borrow::Cow;
 use thiserror::Error;
 
 #[derive(Debug)]
-pub struct ModuleGenerator {
+pub struct ModuleGenerator<'a> {
     module_dir: PathBuf,
+    version: &'a ProtocolVersion,
 }
 
 pub struct StateGenerator {
     file: File,
     current_mod: Option<PacketDirection>,
+    protocol_version: u32,
 }
 
 #[derive(Debug, Display, Error)]
@@ -49,9 +52,12 @@ use std::fmt::{Display, Formatter};
 
 "#;
 
-impl ModuleGenerator {
+impl<'a> ModuleGenerator<'a> {
     /// Module dir will be **deleted** and have mod.rs created
-    pub fn new(module_dir: impl Into<PathBuf>) -> GeneratorResult<Self> {
+    pub fn new(
+        module_dir: impl Into<PathBuf>,
+        version: &'a ProtocolVersion,
+    ) -> GeneratorResult<Self> {
         let module_dir = module_dir.into();
         if module_dir.exists() && !module_dir.is_dir() {
             return Err(GeneratorError::NotADir);
@@ -62,10 +68,16 @@ impl ModuleGenerator {
         }
         std::fs::create_dir_all(&module_dir)?;
 
-        Ok(Self { module_dir })
+        let generator = Self {
+            module_dir,
+            version,
+        };
+        generator.emit_version_constants()?;
+
+        Ok(generator)
     }
 
-    pub fn emit_version_constants(&self, versions: &ProtocolVersion) -> GeneratorResult<()> {
+    fn emit_version_constants(&self) -> GeneratorResult<()> {
         let mut mod_rs = self.append_to_mod_rs()?;
 
         writeln!(
@@ -75,7 +87,7 @@ pub const GAME_VERSION: &str = {:?};
 pub const MAJOR_GAME_VERSION: &str = {:?};
 pub const PROTOCOL_VERSION: u32 = {};
 "#,
-            versions.mc_version, versions.major_version, versions.version
+            self.version.mc_version, self.version.major_version, self.version.version
         )?;
 
         Ok(())
@@ -84,7 +96,7 @@ pub const PROTOCOL_VERSION: u32 = {};
     pub fn emit_state(&mut self, state: &str) -> GeneratorResult<StateGenerator> {
         let mut mod_rs = self.append_to_mod_rs()?;
         writeln!(&mut mod_rs, "pub mod {};", state)?;
-        StateGenerator::new(&self.module_dir, state).map_err(Into::into)
+        StateGenerator::new(&self.module_dir, state, self.version).map_err(Into::into)
     }
 
     fn append_to_mod_rs(&self) -> GeneratorResult<impl std::io::Write> {
@@ -104,7 +116,7 @@ pub const PROTOCOL_VERSION: u32 = {};
 }
 
 impl StateGenerator {
-    fn new(mod_dir: &Path, state: &str) -> std::io::Result<Self> {
+    fn new(mod_dir: &Path, state: &str, version: &ProtocolVersion) -> std::io::Result<Self> {
         let file_name = {
             let mut name = PathBuf::from(state.to_lowercase());
             name.set_extension("rs");
@@ -120,6 +132,7 @@ impl StateGenerator {
         Ok(Self {
             file,
             current_mod: None,
+            protocol_version: version.version,
         })
     }
 
@@ -144,10 +157,12 @@ impl StateGenerator {
             PacketDirection::Serverbound => "ServerBoundPacket",
         };
 
-        let is_incomplete = packet
+        let field_types = packet
             .fields
             .iter()
-            .any(|f| field_type(&f.r#type).is_none());
+            .map(|f| field_type(&f.r#type, self.protocol_version))
+            .collect::<Vec<_>>();
+        let is_incomplete = field_types.iter().any(|ty| ty.is_none());
 
         if is_incomplete {
             writeln!(&mut self.file, "/* TODO incomplete struct {}", struct_name)?;
@@ -161,8 +176,7 @@ impl StateGenerator {
             name = struct_name
         )?;
 
-        for field in &packet.fields {
-            let ty = field_type(&field.r#type);
+        for (field, ty) in packet.fields.iter().zip(field_types.into_iter()) {
             let comment = if ty.is_none() { "// TODO " } else { "" };
             let field_name: syn::Ident = {
                 let name = field.name.to_snake_case();
@@ -198,28 +212,29 @@ impl StateGenerator {
     }
 }
 
-fn field_type(ty: &FieldType) -> Option<&'static str> {
+/// Serializes to Rust type, returns None if not implemented
+fn field_type(ty: &FieldType, protocol_version: u32) -> Option<Cow<'static, str>> {
     use FieldType::*;
     Some(match ty {
-        Varint => "VarIntField",
-        U16 => "UShortField",
-        U8 => "UByteField",
-        I64 => "LongField",
-        I32 => "IntField",
-        I8 => "ByteField",
-        I16 => "ShortField",
-        F32 => "FloatField",
-        F64 => "DoubleField",
-        Bool => "BoolField",
-        String => "StringField",
+        Varint => "VarIntField".into(),
+        U16 => "UShortField".into(),
+        U8 => "UByteField".into(),
+        I64 => "LongField".into(),
+        I32 => "IntField".into(),
+        I8 => "ByteField".into(),
+        I16 => "ShortField".into(),
+        F32 => "FloatField".into(),
+        F64 => "DoubleField".into(),
+        Bool => "BoolField".into(),
+        String => "StringField".into(),
         Buffer { count_ty } if matches!(**count_ty, FieldType::Varint) => {
-            "VarIntThenByteArrayField"
+            "VarIntThenByteArrayField".into()
         }
         // Array { .. } => {}
         // Uuid => {}
         // EntityMetadata => {}
-        // Position => {}
-        RestOfBuffer => "RestOfPacketByteArrayField",
+        Position => format!("PositionField<{}>", protocol_version).into(),
+        RestOfBuffer => "RestOfPacketByteArrayField".into(),
         // Nbt => {}
         // OptionalNbt => {}
         // Switch => {}
