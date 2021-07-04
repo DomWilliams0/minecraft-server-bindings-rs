@@ -2,29 +2,25 @@
 #![allow(unused_imports)]
 
 use crate::types::*;
-use minecraft_server_protocol_derive::{ClientBoundPacket, ServerBoundPacket};
 use async_std::io::Cursor;
+use minecraft_server_protocol_derive::{ClientBoundPacket, ServerBoundPacket};
 use std::fmt::{Display, Formatter};
 
 pub mod server {
-	use super::*;
+    use super::*;
 
-	#[derive(ServerBoundPacket)]
-	#[packet_id = 0x00]
-	pub struct SetProtocol {
-		pub protocol_version: VarIntField,
-		pub server_host: StringField,
-		pub server_port: UShortField,
-		pub next_state: VarIntField,
-	}
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x00]
+    pub struct SetProtocol {
+        pub protocol_version: VarIntField,
+        pub server_host: StringField,
+        pub server_port: UShortField,
+        pub next_state: VarIntField,
+    }
 
-
-	#[derive(ServerBoundPacket)]
-	#[packet_id = 0xfe]
-	pub struct LegacyServerListPing {
-		pub payload: UByteField,
-	}
-
-
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0xfe]
+    pub struct LegacyServerListPing {
+        pub payload: UByteField,
+    }
 }
-
