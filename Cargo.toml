@@ -1,3 +1,7 @@
 [workspace]
 
-members = ["generator", "generator-bin", "packets", "packets/packet-derive"]
+members = [
+    "minecraft-server-protocol", # bindings
+    "minecraft-server-protocol/minecraft-server-protocol-derive", # proc macro for bindings
+    "minecraft-server-protocol/generator", # generator binary, not published
+]
