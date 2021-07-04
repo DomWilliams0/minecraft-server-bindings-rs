@@ -3,7 +3,6 @@ use async_std::io;
 use async_std::io::Cursor;
 use async_trait::async_trait;
 use displaydoc::Display;
-use std::ops::Deref;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -42,10 +41,8 @@ pub struct PacketBody {
     pub body: Vec<u8>,
 }
 
-pub trait Packet: Send + Sync {}
-
 #[async_trait]
-pub trait ClientBound: Packet {
+pub trait ClientBound: Send + Sync {
     async fn write_packet(&self, w: &mut Cursor<&mut [u8]>) -> PacketResult<()>;
 
     fn length(&self) -> usize;
@@ -57,24 +54,7 @@ pub trait ClientBound: Packet {
 }
 
 #[async_trait]
-pub trait ServerBound: Sized + Packet {
+pub trait ServerBound: Sized + Send + Sync {
     // TODO make this sync and block on reading
     async fn read_packet(body: PacketBody) -> PacketResult<Self>;
-}
-
-// TODO arena allocator
-pub struct ClientBoundPacket(Box<dyn ClientBound>);
-
-impl<P: ClientBound + 'static> From<P> for ClientBoundPacket {
-    fn from(packet: P) -> Self {
-        Self(Box::new(packet))
-    }
-}
-
-impl Deref for ClientBoundPacket {
-    type Target = dyn ClientBound;
-
-    fn deref(&self) -> &Self::Target {
-        self.0.deref()
-    }
 }

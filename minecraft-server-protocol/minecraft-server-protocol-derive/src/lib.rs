@@ -102,13 +102,8 @@ pub fn server_packet(input: TokenStream) -> TokenStream {
     let packet_id = extract_packet_id(&item);
     let (field_names, field_types) = extract_fields(&item);
     let name = &item.ident;
-    // let test_mod = format_ident!("test_{}", name);
     let display = impl_display(name, &field_names);
     let result = quote! {
-        impl Packet for #name {
-            // fn id() -> PacketId { Self::ID }
-        }
-
         impl #name {
             pub const ID: PacketId = #packet_id;
         }
@@ -162,13 +157,8 @@ pub fn client_packet(input: TokenStream) -> TokenStream {
     let (field_names, _field_types) = extract_fields(&item);
 
     let name = &item.ident;
-    // let test_mod = format_ident!("test_{}", name);
     let display = impl_display(name, &field_names);
     let result = quote! {
-        impl Packet for #name {
-            // fn id() -> PacketId { Self::ID }
-        }
-
         impl #name {
             pub const ID: PacketId = #packet_id;
         }
@@ -204,9 +194,6 @@ pub fn client_packet(input: TokenStream) -> TokenStream {
         }
 
         #display
-        // #[cfg(test)]
-        // mod #test_mod {
-        //
         // }
     };
 

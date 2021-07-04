@@ -5,7 +5,8 @@ Generated async Minecraft server protocol bindings from [minecraft-data](https:/
 ## TODOs
 * [ ] Implement missing field types
 * [ ] Implement complex packet types with conditional fields
-* [ ] Feature for sync/async
+* [ ] Feature for sync/async IO
+  * [ ] Generic `Read` and `Write` instead of `Cursor`s and `Vec`s
 * [ ] Test all versions
 
 ## Adding new versions
