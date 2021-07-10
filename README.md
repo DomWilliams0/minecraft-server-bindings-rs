@@ -12,7 +12,6 @@ Generated async Minecraft server protocol bindings from [minecraft-data](https:/
 ## Adding new versions
 
 * Clone https://github.com/PrismarineJS/minecraft-data
-* `cargo run --bin generator -- --protocol-dir minecraft-data/data/pc/$NEW_VERSION -o .`
-* `cargo fmt`
-* Declare feature in [packets/Cargo.toml](packets/Cargo.toml)
-* Add feature guard in [packets/src/lib.rs](packets/src/lib.rs)
+* `cargo run --bin generator -- --protocol-dir minecraft-data/data/pc/$NEW_VERSION --out-dir .`
+* Declare feature in [minecraft-server-protocol/Cargo.toml](minecraft-server-protocol/Cargo.toml)
+* Add feature guard in [minecraft-server-protocol/src/lib.rs](minecraft-server-protocol/src/lib.rs)
