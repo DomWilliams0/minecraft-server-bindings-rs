@@ -277,7 +277,7 @@ fn field_type(ty: &FieldType, protocol_version: u32) -> Option<Cow<'static, str>
         // EntityMetadata => {}
         Position => format!("PositionField<{}>", protocol_version).into(),
         RestOfBuffer => "RestOfPacketByteArrayField".into(),
-        // Nbt => {}
+        Nbt => "NbtField".into(),
         // OptionalNbt => {}
         // Switch => {}
         // Slot => {}

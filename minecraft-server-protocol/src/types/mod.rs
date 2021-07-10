@@ -1,5 +1,6 @@
 pub use array::{RestOfPacketByteArrayField, VarIntThenByteArrayField};
 pub use field::Field;
+pub use nbt::{NbtBuilder, NbtField};
 pub use packet::*;
 pub use position::PositionField;
 pub use primitive::{
@@ -13,6 +14,7 @@ mod field;
 mod packet;
 
 mod array;
+mod nbt;
 mod position;
 mod primitive;
 mod string;

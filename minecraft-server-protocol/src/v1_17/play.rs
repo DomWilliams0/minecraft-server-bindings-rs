@@ -344,7 +344,7 @@ pub mod client {
             pub x: IntField,
             pub z: IntField,
             // TODO pub primary_bit_mask: Array { count_ty: Varint },
-            // TODO pub heightmaps: Nbt,
+            pub heightmaps: NbtField,
             // TODO pub biomes: Array { count_ty: Varint },
             pub chunk_data: VarIntThenByteArrayField,
             // TODO pub block_entities: Array { count_ty: Varint },
@@ -403,8 +403,8 @@ pub mod client {
             pub game_mode: UByteField,
             pub previous_game_mode: ByteField,
             // TODO pub world_names: Array { count_ty: Varint },
-            // TODO pub dimension_codec: Nbt,
-            // TODO pub dimension: Nbt,
+            pub dimension_codec: NbtField,
+            pub dimension: NbtField,
             pub world_name: StringField,
             pub hashed_seed: LongField,
             pub max_players: VarIntField,
@@ -621,20 +621,18 @@ pub mod client {
         pub forced: BoolField,
     }
 
-    /* TODO incomplete struct Respawn
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x3d]
-        pub struct Respawn {
-            // TODO pub dimension: Nbt,
-            pub world_name: StringField,
-            pub hashed_seed: LongField,
-            pub gamemode: UByteField,
-            pub previous_gamemode: UByteField,
-            pub is_debug: BoolField,
-            pub is_flat: BoolField,
-            pub copy_metadata: BoolField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x3d]
+    pub struct Respawn {
+        pub dimension: NbtField,
+        pub world_name: StringField,
+        pub hashed_seed: LongField,
+        pub gamemode: UByteField,
+        pub previous_gamemode: UByteField,
+        pub is_debug: BoolField,
+        pub is_flat: BoolField,
+        pub copy_metadata: BoolField,
+    }
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x3e]
@@ -903,14 +901,12 @@ pub mod client {
         pub footer: StringField,
     }
 
-    /* TODO incomplete struct NbtQueryResponse
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x5f]
-        pub struct NbtQueryResponse {
-            pub transaction_id: VarIntField,
-            // TODO pub nbt: Nbt,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x5f]
+    pub struct NbtQueryResponse {
+        pub transaction_id: VarIntField,
+        pub nbt: NbtField,
+    }
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x60]

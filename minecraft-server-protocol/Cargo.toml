@@ -13,6 +13,8 @@ async-std = "1.9"
 log = "0.4"
 thiserror = "1.0"
 displaydoc = "0.2"
+mutf8 = "0.5"
+paste = "1.0"
 
 [dev-dependencies]
 futures-await-test = "0.3"
@@ -20,7 +22,7 @@ quickcheck = "0.9"
 quickcheck_macros = "0.9"
 
 [features]
-default = ["latest"]
+default = ["v1-15-2"]
 latest = ["v1-17"]
 
 v1-17 = []

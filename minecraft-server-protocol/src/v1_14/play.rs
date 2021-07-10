@@ -333,7 +333,7 @@ pub mod client {
             pub z: IntField,
             pub ground_up: BoolField,
             pub bit_map: VarIntField,
-            // TODO pub heightmaps: Nbt,
+            pub heightmaps: NbtField,
             pub chunk_data: VarIntThenByteArrayField,
             // TODO pub block_entities: Array { count_ty: Varint },
         }
@@ -819,14 +819,12 @@ pub mod client {
         pub footer: StringField,
     }
 
-    /* TODO incomplete struct NbtQueryResponse
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x54]
-        pub struct NbtQueryResponse {
-            pub transaction_id: VarIntField,
-            // TODO pub nbt: Nbt,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x54]
+    pub struct NbtQueryResponse {
+        pub transaction_id: VarIntField,
+        pub nbt: NbtField,
+    }
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x55]

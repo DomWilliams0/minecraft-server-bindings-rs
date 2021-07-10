@@ -293,14 +293,12 @@ pub mod client {
         pub entity_status: ByteField,
     }
 
-    /* TODO incomplete struct NbtQueryResponse
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x1d]
-        pub struct NbtQueryResponse {
-            pub transaction_id: VarIntField,
-            // TODO pub nbt: Nbt,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x1d]
+    pub struct NbtQueryResponse {
+        pub transaction_id: VarIntField,
+        pub nbt: NbtField,
+    }
 
     /* TODO incomplete struct Explosion
         #[derive(ClientBoundPacket)]

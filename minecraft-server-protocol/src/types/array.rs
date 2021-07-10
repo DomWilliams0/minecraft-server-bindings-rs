@@ -56,7 +56,7 @@ pub struct ByteArray(pub Vec<u8>);
 
 impl Display for ByteArray {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "{:x?}", self.0)
     }
 }
 
