@@ -7,6 +7,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use std::borrow::Cow;
+use std::fmt::{Display, Formatter};
+use std::process::Command;
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -17,6 +19,7 @@ pub struct ModuleGenerator<'a> {
 
 pub struct StateGenerator {
     file: File,
+    file_path: PathBuf,
     current_mod: Option<PacketDirection>,
     protocol_version: u32,
 }
@@ -37,7 +40,16 @@ pub enum GeneratorError {
 
     /// Too many duplicate packets with name '{0}'
     TooManyDuplicates(String),
+
+    /// Error running rustfmt: {0}
+    Rustfmt(#[source] std::io::Error),
+
+    /// Rustfmt failed: {0}
+    RustfmtExit(RustfmtExit),
 }
+
+#[derive(Debug)]
+pub struct RustfmtExit(Option<i32>);
 
 pub type GeneratorResult<T> = Result<T, GeneratorError>;
 
@@ -122,15 +134,17 @@ impl StateGenerator {
             name.set_extension("rs");
             name
         };
+        let file_path = mod_dir.join(file_name);
         let mut file = std::fs::OpenOptions::new()
             .create_new(true)
             .write(true)
-            .open(mod_dir.join(file_name))?;
+            .open(&file_path)?;
 
         file.write_all(COMMON_HEADER.as_ref())?;
         file.write_all(INCLUDES.as_ref())?;
         Ok(Self {
             file,
+            file_path,
             current_mod: None,
             protocol_version: version.version,
         })
@@ -208,7 +222,35 @@ impl StateGenerator {
             writeln!(&mut self.file, "}}\n")?;
         }
 
+        drop(self.file);
+        rustfmt(&self.file_path)?;
+
         Ok(())
+    }
+}
+
+fn rustfmt(file: &Path) -> GeneratorResult<()> {
+    let exit = Command::new("rustfmt")
+        .args(&["--edition", "2018"])
+        .arg(file)
+        .spawn()
+        .and_then(|mut child| child.wait())
+        .map_err(GeneratorError::Rustfmt)?;
+
+    if exit.success() {
+        Ok(())
+    } else {
+        Err(GeneratorError::RustfmtExit(RustfmtExit(exit.code())))
+    }
+}
+
+impl Display for RustfmtExit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(code) = self.0 {
+            write!(f, "exited with code {}", code)
+        } else {
+            write!(f, "terminated by signal")
+        }
     }
 }
 
