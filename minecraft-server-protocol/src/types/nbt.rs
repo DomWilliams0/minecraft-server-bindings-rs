@@ -3,7 +3,6 @@ use async_std::io::prelude::*;
 use async_std::io::Cursor;
 use async_trait::async_trait;
 use mutf8::mstr;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::{Display, Formatter};
 
@@ -182,7 +181,7 @@ impl Field for NbtField {
         self.bytes.len()
     }
 
-    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
+    async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
         todo!("nbt parsing")
     }
 

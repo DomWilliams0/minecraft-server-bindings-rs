@@ -2,7 +2,8 @@
 #![allow(unused_imports)]
 
 use crate::types::*;
-use async_std::io::Cursor;
+use async_std::io::{prelude::*, Cursor};
+use async_trait::async_trait;
 use minecraft_server_protocol_derive::{ClientBoundPacket, ServerBoundPacket};
 use std::fmt::{Display, Formatter};
 

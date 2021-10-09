@@ -1,4 +1,4 @@
-pub use array::{RestOfPacketByteArrayField, VarIntThenByteArrayField};
+pub use array::{PrefixedArrayField, RestOfPacketByteArrayField, VarIntThenByteArrayField};
 pub use field::Field;
 pub use nbt::{NbtBuilder, NbtField};
 pub use packet::*;

@@ -2,7 +2,8 @@
 #![allow(unused_imports)]
 
 use crate::types::*;
-use async_std::io::Cursor;
+use async_std::io::{prelude::*, Cursor};
+use async_trait::async_trait;
 use minecraft_server_protocol_derive::{ClientBoundPacket, ServerBoundPacket};
 use std::fmt::{Display, Formatter};
 
@@ -10,23 +11,22 @@ pub mod client {
     use super::*;
 
     /* TODO incomplete struct SpawnEntity
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x00]
-        pub struct SpawnEntity {
-            pub entity_id: VarIntField,
-            // TODO pub object_uuid: Uuid,
-            pub r#type: VarIntField,
-            pub x: DoubleField,
-            pub y: DoubleField,
-            pub z: DoubleField,
-            pub pitch: ByteField,
-            pub yaw: ByteField,
-            pub object_data: IntField,
-            pub velocity_x: ShortField,
-            pub velocity_y: ShortField,
-            pub velocity_z: ShortField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x00]
+    pub struct SpawnEntity {
+        pub entity_id: VarIntField,
+        // TODO pub object_uuid: Uuid,
+        pub r#type: VarIntField,
+        pub x: DoubleField,
+        pub y: DoubleField,
+        pub z: DoubleField,
+        pub pitch: ByteField,
+        pub yaw: ByteField,
+        pub object_data: IntField,
+        pub velocity_x: ShortField,
+        pub velocity_y: ShortField,
+        pub velocity_z: ShortField,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x01]
@@ -49,51 +49,48 @@ pub mod client {
     }
 
     /* TODO incomplete struct SpawnEntityLiving
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x03]
-        pub struct SpawnEntityLiving {
-            pub entity_id: VarIntField,
-            // TODO pub entity_uuid: Uuid,
-            pub r#type: VarIntField,
-            pub x: DoubleField,
-            pub y: DoubleField,
-            pub z: DoubleField,
-            pub yaw: ByteField,
-            pub pitch: ByteField,
-            pub head_pitch: ByteField,
-            pub velocity_x: ShortField,
-            pub velocity_y: ShortField,
-            pub velocity_z: ShortField,
-            // TODO pub metadata: EntityMetadata,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x03]
+    pub struct SpawnEntityLiving {
+        pub entity_id: VarIntField,
+        // TODO pub entity_uuid: Uuid,
+        pub r#type: VarIntField,
+        pub x: DoubleField,
+        pub y: DoubleField,
+        pub z: DoubleField,
+        pub yaw: ByteField,
+        pub pitch: ByteField,
+        pub head_pitch: ByteField,
+        pub velocity_x: ShortField,
+        pub velocity_y: ShortField,
+        pub velocity_z: ShortField,
+        // TODO pub metadata: EntityMetadata,
+    }*/
 
     /* TODO incomplete struct SpawnEntityPainting
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x04]
-        pub struct SpawnEntityPainting {
-            pub entity_id: VarIntField,
-            // TODO pub entity_uuid: Uuid,
-            pub title: VarIntField,
-            pub location: PositionField<498>,
-            pub direction: UByteField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x04]
+    pub struct SpawnEntityPainting {
+        pub entity_id: VarIntField,
+        // TODO pub entity_uuid: Uuid,
+        pub title: VarIntField,
+        pub location: PositionField<498>,
+        pub direction: UByteField,
+    }*/
 
     /* TODO incomplete struct NamedEntitySpawn
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x05]
-        pub struct NamedEntitySpawn {
-            pub entity_id: VarIntField,
-            // TODO pub player_uuid: Uuid,
-            pub x: DoubleField,
-            pub y: DoubleField,
-            pub z: DoubleField,
-            pub yaw: ByteField,
-            pub pitch: ByteField,
-            // TODO pub metadata: EntityMetadata,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x05]
+    pub struct NamedEntitySpawn {
+        pub entity_id: VarIntField,
+        // TODO pub player_uuid: Uuid,
+        pub x: DoubleField,
+        pub y: DoubleField,
+        pub z: DoubleField,
+        pub yaw: ByteField,
+        pub pitch: ByteField,
+        // TODO pub metadata: EntityMetadata,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x06]
@@ -103,12 +100,11 @@ pub mod client {
     }
 
     /* TODO incomplete struct Statistics
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x07]
-        pub struct Statistics {
-            // TODO pub entries: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x07]
+    pub struct Statistics {
+        // TODO pub entries: Array<Container>,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x08]
@@ -119,14 +115,13 @@ pub mod client {
     }
 
     /* TODO incomplete struct TileEntityData
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x09]
-        pub struct TileEntityData {
-            pub location: PositionField<498>,
-            pub action: UByteField,
-            // TODO pub nbt_data: OptionalNbt,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x09]
+    pub struct TileEntityData {
+        pub location: PositionField<498>,
+        pub action: UByteField,
+        // TODO pub nbt_data: OptionalNbt,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x0a]
@@ -145,19 +140,188 @@ pub mod client {
     }
 
     /* TODO incomplete struct BossBar
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x0c]
-        pub struct BossBar {
-            // TODO pub entity_uuid: Uuid,
-            pub action: VarIntField,
-            // TODO pub title: Switch,
-            // TODO pub health: Switch,
-            // TODO pub color: Switch,
-            // TODO pub dividers: Switch,
-            // TODO pub flags: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x0c]
+    pub struct BossBar {
+        // TODO pub entity_uuid: Uuid,
+        pub action: VarIntField,
+        pub title: BossBarTitle,
+        pub health: BossBarHealth,
+        pub color: BossBarColor,
+        pub dividers: BossBarDividers,
+        pub flags: BossBarFlags,
+    }*/
 
+    pub enum BossBarTitle {
+        /// action=0
+        One(StringField),
+        /// action=3
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for BossBarTitle {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("BossBarTitle") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for BossBarTitle {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum BossBarHealth {
+        /// action=0
+        One(FloatField),
+        /// action=2
+        Two(FloatField),
+        NotPresent,
+    }
+
+    impl Display for BossBarHealth {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("BossBarHealth") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for BossBarHealth {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum BossBarColor {
+        /// action=0
+        One(VarIntField),
+        /// action=4
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for BossBarColor {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("BossBarColor") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for BossBarColor {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum BossBarDividers {
+        /// action=0
+        One(VarIntField),
+        /// action=4
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for BossBarDividers {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("BossBarDividers") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for BossBarDividers {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum BossBarFlags {
+        /// action=0
+        One(UByteField),
+        /// action=5
+        Two(UByteField),
+        NotPresent,
+    }
+
+    impl Display for BossBarFlags {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("BossBarFlags") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for BossBarFlags {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x0d]
     pub struct Difficulty {
@@ -173,34 +337,31 @@ pub mod client {
     }
 
     /* TODO incomplete struct MultiBlockChange
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x0f]
-        pub struct MultiBlockChange {
-            pub chunk_x: IntField,
-            pub chunk_z: IntField,
-            // TODO pub records: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x0f]
+    pub struct MultiBlockChange {
+        pub chunk_x: IntField,
+        pub chunk_z: IntField,
+        // TODO pub records: Array<Container>,
+    }*/
 
     /* TODO incomplete struct TabComplete
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x10]
-        pub struct TabComplete {
-            pub transaction_id: VarIntField,
-            pub start: VarIntField,
-            pub length: VarIntField,
-            // TODO pub matches: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x10]
+    pub struct TabComplete {
+        pub transaction_id: VarIntField,
+        pub start: VarIntField,
+        pub length: VarIntField,
+        // TODO pub matches: Array<Container>,
+    }*/
 
     /* TODO incomplete struct DeclareCommands
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x11]
-        pub struct DeclareCommands {
-            // TODO pub nodes: Array { count_ty: Varint },
-            pub root_index: VarIntField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x11]
+    pub struct DeclareCommands {
+        // TODO pub nodes: Array<Container>,
+        pub root_index: VarIntField,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x12]
@@ -217,13 +378,12 @@ pub mod client {
     }
 
     /* TODO incomplete struct WindowItems
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x14]
-        pub struct WindowItems {
-            pub window_id: UByteField,
-            // TODO pub items: Array { count_ty: I16 },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x14]
+    pub struct WindowItems {
+        pub window_id: UByteField,
+        // TODO pub items: Array<Slot>,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x15]
@@ -234,14 +394,13 @@ pub mod client {
     }
 
     /* TODO incomplete struct SetSlot
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x16]
-        pub struct SetSlot {
-            pub window_id: ByteField,
-            pub slot: ShortField,
-            // TODO pub item: Slot,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x16]
+    pub struct SetSlot {
+        pub window_id: ByteField,
+        pub slot: ShortField,
+        // TODO pub item: Slot,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x17]
@@ -283,19 +442,18 @@ pub mod client {
     }
 
     /* TODO incomplete struct Explosion
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x1c]
-        pub struct Explosion {
-            pub x: FloatField,
-            pub y: FloatField,
-            pub z: FloatField,
-            pub radius: FloatField,
-            // TODO pub affected_block_offsets: Array { count_ty: I32 },
-            pub player_motion_x: FloatField,
-            pub player_motion_y: FloatField,
-            pub player_motion_z: FloatField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x1c]
+    pub struct Explosion {
+        pub x: FloatField,
+        pub y: FloatField,
+        pub z: FloatField,
+        pub radius: FloatField,
+        // TODO pub affected_block_offsets: Array<Container>,
+        pub player_motion_x: FloatField,
+        pub player_motion_y: FloatField,
+        pub player_motion_z: FloatField,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x1d]
@@ -325,19 +483,17 @@ pub mod client {
         pub keep_alive_id: LongField,
     }
 
-    /* TODO incomplete struct MapChunk
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x21]
-        pub struct MapChunk {
-            pub x: IntField,
-            pub z: IntField,
-            pub ground_up: BoolField,
-            pub bit_map: VarIntField,
-            pub heightmaps: NbtField,
-            pub chunk_data: VarIntThenByteArrayField,
-            // TODO pub block_entities: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x21]
+    pub struct MapChunk {
+        pub x: IntField,
+        pub z: IntField,
+        pub ground_up: BoolField,
+        pub bit_map: VarIntField,
+        pub heightmaps: NbtField,
+        pub chunk_data: VarIntThenByteArrayField,
+        pub block_entities: PrefixedArrayField<VarIntField, NbtField>,
+    }
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x22]
@@ -349,22 +505,21 @@ pub mod client {
     }
 
     /* TODO incomplete struct WorldParticles
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x23]
-        pub struct WorldParticles {
-            pub particle_id: IntField,
-            pub long_distance: BoolField,
-            pub x: FloatField,
-            pub y: FloatField,
-            pub z: FloatField,
-            pub offset_x: FloatField,
-            pub offset_y: FloatField,
-            pub offset_z: FloatField,
-            pub particle_data: FloatField,
-            pub particles: IntField,
-            // TODO pub data: ParticleData,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x23]
+    pub struct WorldParticles {
+        pub particle_id: IntField,
+        pub long_distance: BoolField,
+        pub x: FloatField,
+        pub y: FloatField,
+        pub z: FloatField,
+        pub offset_x: FloatField,
+        pub offset_y: FloatField,
+        pub offset_z: FloatField,
+        pub particle_data: FloatField,
+        pub particles: IntField,
+        // TODO pub data: ParticleData,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x24]
@@ -391,34 +546,160 @@ pub mod client {
     }
 
     /* TODO incomplete struct Map
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x26]
-        pub struct Map {
-            pub item_damage: VarIntField,
-            pub scale: ByteField,
-            pub tracking_position: BoolField,
-            pub locked: BoolField,
-            // TODO pub icons: Array { count_ty: Varint },
-            pub columns: ByteField,
-            // TODO pub rows: Switch,
-            // TODO pub x: Switch,
-            // TODO pub y: Switch,
-            // TODO pub data: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x26]
+    pub struct Map {
+        pub item_damage: VarIntField,
+        pub scale: ByteField,
+        pub tracking_position: BoolField,
+        pub locked: BoolField,
+        // TODO pub icons: Array<Container>,
+        pub columns: ByteField,
+        pub rows: MapRows,
+        pub x: MapX,
+        pub y: MapY,
+        pub data: MapData,
+    }*/
 
-    /* TODO incomplete struct TradeList
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x27]
-        pub struct TradeList {
-            pub window_id: VarIntField,
-            // TODO pub trades: Array { count_ty: U8 },
-            pub villager_level: VarIntField,
-            pub experience: VarIntField,
-            pub is_regular_villager: BoolField,
-            pub can_restock: BoolField,
+    pub enum MapRows {
+        // TODO Default(...)
+        /// columns=0
+        One,
+    }
+
+    impl Display for MapRows {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("MapRows") // TODO better display for autogenerated types
         }
-    */
+    }
+
+    #[async_trait]
+    impl Field for MapRows {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum MapX {
+        // TODO Default(...)
+        /// columns=0
+        One,
+    }
+
+    impl Display for MapX {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("MapX") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for MapX {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum MapY {
+        // TODO Default(...)
+        /// columns=0
+        One,
+    }
+
+    impl Display for MapY {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("MapY") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for MapY {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum MapData {
+        // TODO Default(...)
+        /// columns=0
+        One,
+    }
+
+    impl Display for MapData {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("MapData") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for MapData {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    /* TODO incomplete struct TradeList
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x27]
+    pub struct TradeList {
+        pub window_id: VarIntField,
+        // TODO pub trades: Array<Container>,
+        pub villager_level: VarIntField,
+        pub experience: VarIntField,
+        pub is_regular_villager: BoolField,
+        pub can_restock: BoolField,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x28]
@@ -502,41 +783,230 @@ pub mod client {
         pub walking_speed: FloatField,
     }
 
-    /* TODO incomplete struct CombatEvent
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x32]
-        pub struct CombatEvent {
-            pub event: VarIntField,
-            // TODO pub duration: Switch,
-            // TODO pub player_id: Switch,
-            // TODO pub entity_id: Switch,
-            // TODO pub message: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x32]
+    pub struct CombatEvent {
+        pub event: VarIntField,
+        pub duration: CombatEventDuration,
+        pub player_id: CombatEventPlayerId,
+        pub entity_id: CombatEventEntityId,
+        pub message: CombatEventMessage,
+    }
 
+    pub enum CombatEventDuration {
+        /// event=1
+        One(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for CombatEventDuration {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("CombatEventDuration") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for CombatEventDuration {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum CombatEventPlayerId {
+        /// event=2
+        One(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for CombatEventPlayerId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("CombatEventPlayerId") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for CombatEventPlayerId {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum CombatEventEntityId {
+        /// event=1
+        One(IntField),
+        /// event=2
+        Two(IntField),
+        NotPresent,
+    }
+
+    impl Display for CombatEventEntityId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("CombatEventEntityId") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for CombatEventEntityId {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum CombatEventMessage {
+        /// event=2
+        One(StringField),
+        NotPresent,
+    }
+
+    impl Display for CombatEventMessage {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("CombatEventMessage") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for CombatEventMessage {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     /* TODO incomplete struct PlayerInfo
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x33]
-        pub struct PlayerInfo {
-            pub action: VarIntField,
-            // TODO pub data: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x33]
+    pub struct PlayerInfo {
+        pub action: VarIntField,
+        // TODO pub data: Array<Container>,
+    }*/
 
-    /* TODO incomplete struct FacePlayer
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x34]
-        pub struct FacePlayer {
-            pub feet_eyes: VarIntField,
-            pub x: DoubleField,
-            pub y: DoubleField,
-            pub z: DoubleField,
-            pub is_entity: BoolField,
-            // TODO pub entity_id: Switch,
-            // TODO pub entity_feet_eyes: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x34]
+    pub struct FacePlayer {
+        pub feet_eyes: VarIntField,
+        pub x: DoubleField,
+        pub y: DoubleField,
+        pub z: DoubleField,
+        pub is_entity: BoolField,
+        pub entity_id: FacePlayerEntityId,
+        pub entity_feet_eyes: FacePlayerEntityFeetEyes,
+    }
 
+    pub enum FacePlayerEntityId {
+        /// isEntity=true
+        One(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for FacePlayerEntityId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("FacePlayerEntityId") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for FacePlayerEntityId {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum FacePlayerEntityFeetEyes {
+        /// isEntity=true
+        One(StringField),
+        NotPresent,
+    }
+
+    impl Display for FacePlayerEntityFeetEyes {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("FacePlayerEntityFeetEyes") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for FacePlayerEntityFeetEyes {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x35]
     pub struct Position {
@@ -549,27 +1019,55 @@ pub mod client {
         pub teleport_id: VarIntField,
     }
 
-    /* TODO incomplete struct UnlockRecipes
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x36]
-        pub struct UnlockRecipes {
-            pub action: VarIntField,
-            pub crafting_book_open: BoolField,
-            pub filtering_craftable: BoolField,
-            pub smelting_book_open: BoolField,
-            pub filtering_smeltable: BoolField,
-            // TODO pub recipes_1: Array { count_ty: Varint },
-            // TODO pub recipes_2: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x36]
+    pub struct UnlockRecipes {
+        pub action: VarIntField,
+        pub crafting_book_open: BoolField,
+        pub filtering_craftable: BoolField,
+        pub smelting_book_open: BoolField,
+        pub filtering_smeltable: BoolField,
+        pub recipes_1: PrefixedArrayField<VarIntField, StringField>,
+        pub recipes_2: UnlockRecipesRecipes2,
+    }
 
-    /* TODO incomplete struct EntityDestroy
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x37]
-        pub struct EntityDestroy {
-            // TODO pub entity_ids: Array { count_ty: Varint },
+    pub enum UnlockRecipesRecipes2 {
+        /// action=0
+        One(PrefixedArrayField<VarIntField, StringField>),
+        NotPresent,
+    }
+
+    impl Display for UnlockRecipesRecipes2 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UnlockRecipesRecipes2") // TODO better display for autogenerated types
         }
-    */
+    }
+
+    #[async_trait]
+    impl Field for UnlockRecipesRecipes2 {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x37]
+    pub struct EntityDestroy {
+        pub entity_ids: PrefixedArrayField<VarIntField, VarIntField>,
+    }
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x38]
@@ -601,30 +1099,329 @@ pub mod client {
     }
 
     /* TODO incomplete struct SelectAdvancementTab
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x3c]
-        pub struct SelectAdvancementTab {
-            // TODO pub id: Option(String),
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x3c]
+    pub struct SelectAdvancementTab {
+        // TODO pub id: Option,
+    }*/
 
-    /* TODO incomplete struct WorldBorder
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x3d]
-        pub struct WorldBorder {
-            pub action: VarIntField,
-            // TODO pub radius: Switch,
-            // TODO pub x: Switch,
-            // TODO pub z: Switch,
-            // TODO pub old_radius: Switch,
-            // TODO pub new_radius: Switch,
-            // TODO pub speed: Switch,
-            // TODO pub portal_boundary: Switch,
-            // TODO pub warning_time: Switch,
-            // TODO pub warning_blocks: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x3d]
+    pub struct WorldBorder {
+        pub action: VarIntField,
+        pub radius: WorldBorderRadius,
+        pub x: WorldBorderX,
+        pub z: WorldBorderZ,
+        pub old_radius: WorldBorderOldRadius,
+        pub new_radius: WorldBorderNewRadius,
+        pub speed: WorldBorderSpeed,
+        pub portal_boundary: WorldBorderPortalBoundary,
+        pub warning_time: WorldBorderWarningTime,
+        pub warning_blocks: WorldBorderWarningBlocks,
+    }
 
+    pub enum WorldBorderRadius {
+        /// action=0
+        One(DoubleField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderRadius {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderRadius") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderRadius {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderX {
+        /// action=2
+        One(DoubleField),
+        /// action=3
+        Two(DoubleField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderX {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderX") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderX {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderZ {
+        /// action=2
+        One(DoubleField),
+        /// action=3
+        Two(DoubleField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderZ {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderZ") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderZ {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderOldRadius {
+        /// action=1
+        One(DoubleField),
+        /// action=3
+        Two(DoubleField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderOldRadius {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderOldRadius") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderOldRadius {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderNewRadius {
+        /// action=1
+        One(DoubleField),
+        /// action=3
+        Two(DoubleField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderNewRadius {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderNewRadius") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderNewRadius {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderSpeed {
+        /// action=1
+        One(VarIntField),
+        /// action=3
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderSpeed {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderSpeed") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderSpeed {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderPortalBoundary {
+        /// action=3
+        One(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderPortalBoundary {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderPortalBoundary") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderPortalBoundary {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderWarningTime {
+        /// action=3
+        One(VarIntField),
+        /// action=4
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderWarningTime {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderWarningTime") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderWarningTime {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum WorldBorderWarningBlocks {
+        /// action=3
+        One(VarIntField),
+        /// action=5
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for WorldBorderWarningBlocks {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("WorldBorderWarningBlocks") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for WorldBorderWarningBlocks {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x3e]
     pub struct Camera {
@@ -658,13 +1455,12 @@ pub mod client {
     }
 
     /* TODO incomplete struct EntityMetadata
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x43]
-        pub struct EntityMetadata {
-            pub entity_id: VarIntField,
-            // TODO pub metadata: EntityMetadata,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x43]
+    pub struct EntityMetadata {
+        pub entity_id: VarIntField,
+        // TODO pub metadata: EntityMetadata,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x44]
@@ -683,14 +1479,13 @@ pub mod client {
     }
 
     /* TODO incomplete struct EntityEquipment
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x46]
-        pub struct EntityEquipment {
-            pub entity_id: VarIntField,
-            pub slot: VarIntField,
-            // TODO pub item: Slot,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x46]
+    pub struct EntityEquipment {
+        pub entity_id: VarIntField,
+        pub slot: VarIntField,
+        // TODO pub item: Slot,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x47]
@@ -708,54 +1503,420 @@ pub mod client {
         pub food_saturation: FloatField,
     }
 
-    /* TODO incomplete struct ScoreboardObjective
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x49]
-        pub struct ScoreboardObjective {
-            pub name: StringField,
-            pub action: ByteField,
-            // TODO pub display_text: Switch,
-            // TODO pub r#type: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x49]
+    pub struct ScoreboardObjective {
+        pub name: StringField,
+        pub action: ByteField,
+        pub display_text: ScoreboardObjectiveDisplayText,
+        pub r#type: ScoreboardObjectiveType,
+    }
 
-    /* TODO incomplete struct SetPassengers
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x4a]
-        pub struct SetPassengers {
-            pub entity_id: VarIntField,
-            // TODO pub passengers: Array { count_ty: Varint },
-        }
-    */
+    pub enum ScoreboardObjectiveDisplayText {
+        /// action=0
+        One(StringField),
+        /// action=2
+        Two(StringField),
+        NotPresent,
+    }
 
-    /* TODO incomplete struct Teams
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x4b]
-        pub struct Teams {
-            pub team: StringField,
-            pub mode: ByteField,
-            // TODO pub name: Switch,
-            // TODO pub friendly_fire: Switch,
-            // TODO pub name_tag_visibility: Switch,
-            // TODO pub collision_rule: Switch,
-            // TODO pub formatting: Switch,
-            // TODO pub prefix: Switch,
-            // TODO pub suffix: Switch,
-            // TODO pub players: Switch,
+    impl Display for ScoreboardObjectiveDisplayText {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("ScoreboardObjectiveDisplayText") // TODO better display for autogenerated types
         }
-    */
+    }
 
-    /* TODO incomplete struct ScoreboardScore
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x4c]
-        pub struct ScoreboardScore {
-            pub item_name: StringField,
-            pub action: ByteField,
-            pub score_name: StringField,
-            // TODO pub value: Switch,
+    #[async_trait]
+    impl Field for ScoreboardObjectiveDisplayText {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
         }
-    */
 
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum ScoreboardObjectiveType {
+        /// action=0
+        One(VarIntField),
+        /// action=2
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for ScoreboardObjectiveType {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("ScoreboardObjectiveType") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for ScoreboardObjectiveType {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x4a]
+    pub struct SetPassengers {
+        pub entity_id: VarIntField,
+        pub passengers: PrefixedArrayField<VarIntField, VarIntField>,
+    }
+
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x4b]
+    pub struct Teams {
+        pub team: StringField,
+        pub mode: ByteField,
+        pub name: TeamsName,
+        pub friendly_fire: TeamsFriendlyFire,
+        pub name_tag_visibility: TeamsNameTagVisibility,
+        pub collision_rule: TeamsCollisionRule,
+        pub formatting: TeamsFormatting,
+        pub prefix: TeamsPrefix,
+        pub suffix: TeamsSuffix,
+        pub players: TeamsPlayers,
+    }
+
+    pub enum TeamsName {
+        /// mode=0
+        One(StringField),
+        /// mode=2
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for TeamsName {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsName") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsName {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsFriendlyFire {
+        /// mode=0
+        One(ByteField),
+        /// mode=2
+        Two(ByteField),
+        NotPresent,
+    }
+
+    impl Display for TeamsFriendlyFire {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsFriendlyFire") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsFriendlyFire {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsNameTagVisibility {
+        /// mode=0
+        One(StringField),
+        /// mode=2
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for TeamsNameTagVisibility {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsNameTagVisibility") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsNameTagVisibility {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsCollisionRule {
+        /// mode=0
+        One(StringField),
+        /// mode=2
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for TeamsCollisionRule {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsCollisionRule") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsCollisionRule {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsFormatting {
+        /// mode=0
+        One(VarIntField),
+        /// mode=2
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for TeamsFormatting {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsFormatting") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsFormatting {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsPrefix {
+        /// mode=0
+        One(StringField),
+        /// mode=2
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for TeamsPrefix {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsPrefix") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsPrefix {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsSuffix {
+        /// mode=0
+        One(StringField),
+        /// mode=2
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for TeamsSuffix {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsSuffix") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsSuffix {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TeamsPlayers {
+        /// mode=0
+        One(PrefixedArrayField<VarIntField, StringField>),
+        /// mode=3
+        Two(PrefixedArrayField<VarIntField, StringField>),
+        /// mode=4
+        Three(PrefixedArrayField<VarIntField, StringField>),
+        NotPresent,
+    }
+
+    impl Display for TeamsPlayers {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TeamsPlayers") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TeamsPlayers {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x4c]
+    pub struct ScoreboardScore {
+        pub item_name: StringField,
+        pub action: ByteField,
+        pub score_name: StringField,
+        pub value: ScoreboardScoreValue,
+    }
+
+    pub enum ScoreboardScoreValue {
+        // TODO Default(...)
+        /// action=1
+        One,
+    }
+
+    impl Display for ScoreboardScoreValue {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("ScoreboardScoreValue") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for ScoreboardScoreValue {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x4d]
     pub struct SpawnPosition {
@@ -769,18 +1930,148 @@ pub mod client {
         pub time: LongField,
     }
 
-    /* TODO incomplete struct Title
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x4f]
-        pub struct Title {
-            pub action: VarIntField,
-            // TODO pub text: Switch,
-            // TODO pub fade_in: Switch,
-            // TODO pub stay: Switch,
-            // TODO pub fade_out: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x4f]
+    pub struct Title {
+        pub action: VarIntField,
+        pub text: TitleText,
+        pub fade_in: TitleFadeIn,
+        pub stay: TitleStay,
+        pub fade_out: TitleFadeOut,
+    }
 
+    pub enum TitleText {
+        /// action=0
+        One(StringField),
+        /// action=1
+        Two(StringField),
+        /// action=2
+        Three(StringField),
+        NotPresent,
+    }
+
+    impl Display for TitleText {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TitleText") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TitleText {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TitleFadeIn {
+        /// action=3
+        One(IntField),
+        NotPresent,
+    }
+
+    impl Display for TitleFadeIn {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TitleFadeIn") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TitleFadeIn {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TitleStay {
+        /// action=3
+        One(IntField),
+        NotPresent,
+    }
+
+    impl Display for TitleStay {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TitleStay") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TitleStay {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum TitleFadeOut {
+        /// action=3
+        One(IntField),
+        NotPresent,
+    }
+
+    impl Display for TitleFadeOut {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("TitleFadeOut") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for TitleFadeOut {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x50]
     pub struct EntitySoundEffect {
@@ -803,16 +2094,82 @@ pub mod client {
         pub pitch: FloatField,
     }
 
-    /* TODO incomplete struct StopSound
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x52]
-        pub struct StopSound {
-            pub flags: ByteField,
-            // TODO pub source: Switch,
-            // TODO pub sound: Switch,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x52]
+    pub struct StopSound {
+        pub flags: ByteField,
+        pub source: StopSoundSource,
+        pub sound: StopSoundSound,
+    }
 
+    pub enum StopSoundSource {
+        /// flags=1
+        One(VarIntField),
+        /// flags=3
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for StopSoundSource {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("StopSoundSource") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for StopSoundSource {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum StopSoundSound {
+        /// flags=2
+        One(StringField),
+        /// flags=3
+        Two(StringField),
+        NotPresent,
+    }
+
+    impl Display for StopSoundSound {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("StopSoundSound") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for StopSoundSound {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x53]
     pub struct PlayerlistHeader {
@@ -848,24 +2205,22 @@ pub mod client {
     }
 
     /* TODO incomplete struct Advancements
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x57]
-        pub struct Advancements {
-            pub reset: BoolField,
-            // TODO pub advancement_mapping: Array { count_ty: Varint },
-            // TODO pub identifiers: Array { count_ty: Varint },
-            // TODO pub progress_mapping: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x57]
+    pub struct Advancements {
+        pub reset: BoolField,
+        // TODO pub advancement_mapping: Array<Container>,
+        pub identifiers: PrefixedArrayField<VarIntField, StringField>,
+        // TODO pub progress_mapping: Array<Container>,
+    }*/
 
     /* TODO incomplete struct EntityUpdateAttributes
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x58]
-        pub struct EntityUpdateAttributes {
-            pub entity_id: VarIntField,
-            // TODO pub properties: Array { count_ty: I32 },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x58]
+    pub struct EntityUpdateAttributes {
+        pub entity_id: VarIntField,
+        // TODO pub properties: Array<Container>,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x59]
@@ -878,23 +2233,21 @@ pub mod client {
     }
 
     /* TODO incomplete struct DeclareRecipes
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x5a]
-        pub struct DeclareRecipes {
-            // TODO pub recipes: Array { count_ty: Varint },
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x5a]
+    pub struct DeclareRecipes {
+        // TODO pub recipes: Array<Container>,
+    }*/
 
     /* TODO incomplete struct Tags
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x5b]
-        pub struct Tags {
-            // TODO pub block_tags: Tags,
-            // TODO pub item_tags: Tags,
-            // TODO pub fluid_tags: Tags,
-            // TODO pub entity_tags: Tags,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x5b]
+    pub struct Tags {
+        // TODO pub block_tags: Tags,
+        // TODO pub item_tags: Tags,
+        // TODO pub fluid_tags: Tags,
+        // TODO pub entity_tags: Tags,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x5c]
@@ -974,17 +2327,16 @@ pub mod server {
     }
 
     /* TODO incomplete struct WindowClick
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x09]
-        pub struct WindowClick {
-            pub window_id: UByteField,
-            pub slot: ShortField,
-            pub mouse_button: ByteField,
-            pub action: ShortField,
-            pub mode: ByteField,
-            // TODO pub item: Slot,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x09]
+    pub struct WindowClick {
+        pub window_id: UByteField,
+        pub slot: ShortField,
+        pub mouse_button: ByteField,
+        pub action: ShortField,
+        pub mode: ByteField,
+        // TODO pub item: Slot,
+    }*/
 
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x0a]
@@ -1000,14 +2352,13 @@ pub mod server {
     }
 
     /* TODO incomplete struct EditBook
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x0c]
-        pub struct EditBook {
-            // TODO pub new_book: Slot,
-            pub signing: BoolField,
-            pub hand: VarIntField,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x0c]
+    pub struct EditBook {
+        // TODO pub new_book: Slot,
+        pub signing: BoolField,
+        pub hand: VarIntField,
+    }*/
 
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x0d]
@@ -1016,19 +2367,147 @@ pub mod server {
         pub entity_id: VarIntField,
     }
 
-    /* TODO incomplete struct UseEntity
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x0e]
-        pub struct UseEntity {
-            pub target: VarIntField,
-            pub mouse: VarIntField,
-            // TODO pub x: Switch,
-            // TODO pub y: Switch,
-            // TODO pub z: Switch,
-            // TODO pub hand: Switch,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x0e]
+    pub struct UseEntity {
+        pub target: VarIntField,
+        pub mouse: VarIntField,
+        pub x: UseEntityX,
+        pub y: UseEntityY,
+        pub z: UseEntityZ,
+        pub hand: UseEntityHand,
+    }
 
+    pub enum UseEntityX {
+        /// mouse=2
+        One(FloatField),
+        NotPresent,
+    }
+
+    impl Display for UseEntityX {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UseEntityX") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for UseEntityX {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum UseEntityY {
+        /// mouse=2
+        One(FloatField),
+        NotPresent,
+    }
+
+    impl Display for UseEntityY {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UseEntityY") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for UseEntityY {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum UseEntityZ {
+        /// mouse=2
+        One(FloatField),
+        NotPresent,
+    }
+
+    impl Display for UseEntityZ {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UseEntityZ") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for UseEntityZ {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
+    pub enum UseEntityHand {
+        /// mouse=0
+        One(VarIntField),
+        /// mouse=2
+        Two(VarIntField),
+        NotPresent,
+    }
+
+    impl Display for UseEntityHand {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("UseEntityHand") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for UseEntityHand {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x0f]
     pub struct KeepAlive {
@@ -1138,15 +2617,44 @@ pub mod server {
         pub jump: UByteField,
     }
 
-    /* TODO incomplete struct CraftingBookData
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x1d]
-        pub struct CraftingBookData {
-            pub r#type: VarIntField,
-            // TODO pub anon: Switch,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x1d]
+    pub struct CraftingBookData {
+        pub r#type: VarIntField,
+        pub anon: CraftingBookDataAnon,
+    }
 
+    pub enum CraftingBookDataAnon {
+        // TODO One(...)
+    // TODO Two(...)
+    }
+
+    impl Display for CraftingBookDataAnon {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("CraftingBookDataAnon") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for CraftingBookDataAnon {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x1e]
     pub struct NameItem {
@@ -1159,15 +2667,46 @@ pub mod server {
         pub result: VarIntField,
     }
 
-    /* TODO incomplete struct AdvancementTab
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x20]
-        pub struct AdvancementTab {
-            pub action: VarIntField,
-            // TODO pub tab_id: Switch,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x20]
+    pub struct AdvancementTab {
+        pub action: VarIntField,
+        pub tab_id: AdvancementTabTabId,
+    }
 
+    pub enum AdvancementTabTabId {
+        /// action=0
+        One(StringField),
+        /// action=1
+        Two,
+    }
+
+    impl Display for AdvancementTabTabId {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            f.write_str("AdvancementTabTabId") // TODO better display for autogenerated types
+        }
+    }
+
+    #[async_trait]
+    impl Field for AdvancementTabTabId {
+        type Displayable = Self;
+
+        fn value(&self) -> &Self::Displayable {
+            self
+        }
+
+        fn size(&self) -> usize {
+            todo!()
+        }
+
+        async fn read_field<R: Read + Unpin + Send>(_r: &mut R) -> PacketResult<Self> {
+            todo!()
+        }
+
+        async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
+            todo!()
+        }
+    }
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x21]
     pub struct SelectTrade {
@@ -1205,13 +2744,12 @@ pub mod server {
     }
 
     /* TODO incomplete struct SetCreativeSlot
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x26]
-        pub struct SetCreativeSlot {
-            pub slot: ShortField,
-            // TODO pub item: Slot,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x26]
+    pub struct SetCreativeSlot {
+        pub slot: ShortField,
+        // TODO pub item: Slot,
+    }*/
 
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x27]
@@ -1260,12 +2798,11 @@ pub mod server {
     }
 
     /* TODO incomplete struct Spectate
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x2b]
-        pub struct Spectate {
-            // TODO pub target: Uuid,
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x2b]
+    pub struct Spectate {
+        // TODO pub target: Uuid,
+    }*/
 
     #[derive(ServerBoundPacket)]
     #[packet_id = 0x2c]

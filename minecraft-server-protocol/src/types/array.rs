@@ -1,12 +1,19 @@
 use crate::types::field::Field;
-use crate::types::{PacketError, PacketResult, VarIntField};
+use crate::types::{NbtField, PacketError, PacketResult, VarIntField};
 use async_std::io::prelude::*;
 use async_trait::async_trait;
 use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
 
 pub struct VarIntThenByteArrayField {
     length: VarIntField,
     array: ByteArray,
+}
+
+pub struct PrefixedArrayField<C, T> {
+    count: C,
+    array: ByteArray,
+    phantom: PhantomData<T>,
 }
 
 impl VarIntThenByteArrayField {
@@ -83,5 +90,26 @@ impl Field for RestOfPacketByteArrayField {
 
     async fn write_field<W: Write + Unpin + Send>(&self, _w: &mut W) -> PacketResult<()> {
         unimplemented!()
+    }
+}
+
+#[async_trait]
+impl<C: Field + Send + Sync, T: Field + Send + Sync> Field for PrefixedArrayField<C, T> {
+    type Displayable = ByteArray; // TODO do better
+
+    fn value(&self) -> &Self::Displayable {
+        &self.array
+    }
+
+    fn size(&self) -> usize {
+        todo!()
+    }
+
+    async fn read_field<R: Read + Unpin + Send>(r: &mut R) -> PacketResult<Self> {
+        todo!()
+    }
+
+    async fn write_field<W: Write + Unpin + Send>(&self, w: &mut W) -> PacketResult<()> {
+        todo!()
     }
 }

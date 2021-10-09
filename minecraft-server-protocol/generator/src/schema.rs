@@ -10,7 +10,7 @@ use thiserror::Error;
 
 use crate::schema::raw::PacketDefinition;
 use std::error::Error;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::option::Option::None;
 
 #[derive(Debug, Display, Error)]
@@ -47,12 +47,16 @@ pub enum SchemaError {
 
     /// Missing key '{0}' in switch {1}
     MissingSwitchKey(String, &'static str),
+
+    /// No such field '{0}' referenced in switch
+    BadSwitchField(String),
 }
 
 mod raw {
     #![allow(non_snake_case)]
 
     use super::*;
+    use serde::de::Error;
 
     #[derive(Deserialize)]
     pub struct ProtocolRoot {
@@ -87,8 +91,9 @@ mod raw {
     #[derive(Deserialize, Debug)]
     pub struct Switch {
         #[serde(rename = "compareTo")]
-        pub compare_to: String,
+        pub predicate_field: String,
         pub fields: BTreeMap<String, Value>,
+        pub default: Option<Value>,
     }
 
     #[derive(Deserialize, Debug)]
@@ -106,14 +111,25 @@ mod raw {
 
     #[derive(Deserialize, Debug)]
     pub struct BufferType<'a> {
-        pub countType: &'a str,
+        #[serde(rename = "countType")]
+        pub count_type: &'a str,
     }
 
+    /// Either countType OR count
     #[derive(Deserialize, Debug)]
     pub struct ArrayType<'a> {
-        pub countType: &'a str,
+        #[serde(rename = "countType")]
+        count_type: Option<&'a str>,
+        count: Option<Value>,
         pub r#type: Value,
     }
+
+    pub enum ArrayCount<'a> {
+        PrefixedBy(&'a str),
+        Constant(usize),
+        Field(String),
+    }
+
     #[derive(Deserialize, Debug, Clone)]
     pub struct ProtocolVersion {
         #[serde(rename = "minecraftVersion")]
@@ -122,12 +138,43 @@ mod raw {
         #[serde(rename = "majorVersion")]
         pub major_version: String,
     }
+
+    impl<'a> ArrayType<'a> {
+        pub fn count(&self) -> Result<ArrayCount, SchemaError> {
+            match (self.count.as_ref(), self.count_type) {
+                (Some(Value::Number(num)), None) if num.is_u64() => {
+                    let n = num.as_u64().unwrap();
+                    Ok(ArrayCount::Constant(n as usize))
+                }
+                (Some(Value::String(s)), None) => Ok(ArrayCount::Field(s.clone())),
+                (None, Some(n)) => Ok(ArrayCount::PrefixedBy(n)),
+                _ => Err(SchemaError::Deserializing(
+                    serde_json::Error::custom("expected either array countType or count"),
+                    "array count",
+                )), // TODO move to custom deserializer
+            }
+        }
+    }
 }
 
 pub use raw::ProtocolVersion;
 
 #[derive(Debug)]
 struct VarintMappings(BTreeMap<i32, String>);
+
+#[derive(Debug)]
+pub enum VoidableType {
+    Void,
+    Present(Box<FieldType>),
+}
+
+#[derive(Debug)]
+pub struct FieldSwitch {
+    pub predicate_field: String,
+    pub cases: Vec<(String, VoidableType)>,
+    /// None if not specified
+    pub default: Option<VoidableType>,
+}
 
 pub struct Schema {
     root: raw::ProtocolRoot,
@@ -293,7 +340,7 @@ impl<'a> State<'a> {
                 context.currently_with("parsing field", field);
                 let field =
                     raw::Field::deserialize(field).map_err(|e| Deserializing(e, "field"))?;
-                let field_ty = FieldType::try_from(&field.r#type)?;
+                let field_ty = FieldType::try_from(&field.r#type, &packet)?;
                 assert!(field.name.is_some() || field.anon); // TODO result
 
                 // TODO multiple anons?
@@ -368,6 +415,14 @@ fn extract_specific<'a>(key: &'static str, val: &'a Value) -> Option<&'a Value> 
 }
 
 #[derive(Debug)]
+pub enum ArrayCount {
+    Prefixed(Box<FieldType>),
+    Constant(usize),
+    /// Name of field
+    Field(String),
+}
+
+#[derive(Debug)]
 pub enum FieldType {
     Varint,
     U16,
@@ -378,8 +433,8 @@ pub enum FieldType {
         count_ty: Box<FieldType>,
     },
     Array {
-        count_ty: Box<FieldType>,
-        // TODO elem_ty
+        count: ArrayCount,
+        elem_ty: Box<FieldType>,
     },
     I32,
     I8,
@@ -393,13 +448,17 @@ pub enum FieldType {
     RestOfBuffer,
     Nbt,
     OptionalNbt,
-    Switch,       // TODO
-    Slot,         // TODO
-    ParticleData, // TODO
+    Switch(FieldSwitch),
     Option(Box<FieldType>),
+    Container(Vec<(String, FieldType)>),
+    Void,
+    Slot,                     // TODO
+    ParticleData,             // TODO
     Bitfield,                 // TODO
     TopBitSetTerminatedArray, // TODO
     Tags,                     // TODO
+    SmeltingRecipe,           // TODO
+    Ingredient,               // TODO
 }
 
 #[derive(Debug)]
@@ -439,10 +498,8 @@ impl VarintMappings {
     }
 }
 
-impl TryFrom<&Value> for FieldType {
-    type Error = SchemaError;
-
-    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+impl FieldType {
+    fn try_from(value: &Value, packet: &Packet) -> Result<Self, SchemaError> {
         if let Some(str) = value.as_str() {
             str.parse()
         } else if let Some(kv) = extract(value) {
@@ -450,27 +507,86 @@ impl TryFrom<&Value> for FieldType {
                 ("buffer", obj) => {
                     let buffer = raw::BufferType::deserialize(obj)
                         .map_err(|e| SchemaError::Deserializing(e, "buffer"))?;
-                    let resolved_ty = buffer.countType.parse()?;
+                    let resolved_ty = buffer.count_type.parse()?;
                     Ok(FieldType::Buffer {
                         count_ty: Box::new(resolved_ty),
                     })
                 }
-                ("switch", obj) => Ok(FieldType::Switch),
+                ("switch", obj) => {
+                    let switch = raw::Switch::deserialize(obj)
+                        .map_err(|e| SchemaError::Deserializing(e, "switch"))?;
+
+                    // ensure field exists
+                    // TODO handle bitfields slash syntax
+                    // let _compare_field = packet
+                    //     .fields
+                    //     .iter()
+                    //     .find(|f| f.name == switch.predicate_field)
+                    //     .ok_or(SchemaError::BadSwitchField(switch.predicate_field))?;
+
+                    let default = match switch.default {
+                        Some(val) => {
+                            let resolved_ty = FieldType::try_from(&val, packet)?;
+                            Some(VoidableType::from(resolved_ty))
+                        }
+                        None => None,
+                    };
+
+                    let cases = switch
+                        .fields
+                        .into_iter()
+                        .map(|(val, ty)| {
+                            FieldType::try_from(&ty, packet).map(|ty| (val, VoidableType::from(ty)))
+                        })
+                        .collect::<Result<_, _>>()?;
+
+                    Ok(FieldType::Switch(FieldSwitch {
+                        predicate_field: switch.predicate_field,
+                        cases,
+                        default,
+                    }))
+                }
                 ("array", obj) => {
                     let array = raw::ArrayType::deserialize(obj)
                         .map_err(|e| SchemaError::Deserializing(e, "array"))?;
-                    let resolved_ty = array.countType.parse()?;
-                    Ok(FieldType::Array {
-                        count_ty: Box::new(resolved_ty),
-                    })
+
+                    let count = match array.count()? {
+                        raw::ArrayCount::PrefixedBy(ty) => {
+                            ArrayCount::Prefixed(Box::new(ty.parse()?))
+                        }
+                        raw::ArrayCount::Constant(n) => ArrayCount::Constant(n),
+                        raw::ArrayCount::Field(f) => ArrayCount::Field(f),
+                    };
+
+                    let elem_ty = Box::new(FieldType::try_from(&array.r#type, packet)?);
+
+                    Ok(FieldType::Array { count, elem_ty })
                 }
-                ("particleData", obj) => Ok(FieldType::ParticleData),
+                ("container", obj) => {
+                    let vals = obj
+                        .as_array()
+                        .ok_or(SchemaError::BadStructure("container"))?;
+                    let fields = vals
+                        .iter()
+                        .map(|val| match raw::Field::deserialize(val) {
+                            Ok(field) => {
+                                let ty = FieldType::try_from(&field.r#type, &packet)?;
+                                Ok((field.name.expect("missing field name").to_owned(), ty))
+                                // TODO result
+                            }
+                            Err(e) => Err(SchemaError::Deserializing(e, "container field")),
+                        })
+                        .collect::<Result<_, _>>()?;
+
+                    Ok(FieldType::Container(fields))
+                }
+                ("particleData", _obj) => Ok(FieldType::ParticleData),
                 ("option", obj) => {
-                    let resolved_ty = Self::try_from(obj)?;
+                    let resolved_ty = Self::try_from(obj, packet)?;
                     Ok(FieldType::Option(Box::new(resolved_ty)))
                 }
-                ("bitfield", obj) => Ok(FieldType::Bitfield),
-                ("topBitSetTerminatedArray", obj) => Ok(FieldType::TopBitSetTerminatedArray),
+                ("bitfield", _obj) => Ok(FieldType::Bitfield),
+                ("topBitSetTerminatedArray", _obj) => Ok(FieldType::TopBitSetTerminatedArray),
                 (k, _) => Err(SchemaError::UnknownFieldType(k.into())),
             }
         } else {
@@ -503,6 +619,9 @@ impl FromStr for FieldType {
             "optionalNbt" => Self::OptionalNbt,
             "slot" => Self::Slot,
             "tags" => Self::Tags,
+            "void" => Self::Void,
+            "minecraft_smelting_format" => Self::SmeltingRecipe,
+            "ingredient" => Self::Ingredient,
             _ => return Err(SchemaError::UnknownFieldType(s.into())),
         })
     }
@@ -511,5 +630,52 @@ impl FromStr for FieldType {
 impl Error for ContextualError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         self.1.as_ref().map(|s| s as &dyn Error)
+    }
+}
+
+impl From<FieldType> for VoidableType {
+    fn from(ty: FieldType) -> Self {
+        if let FieldType::Void = ty {
+            Self::Void
+        } else {
+            Self::Present(Box::new(ty))
+        }
+    }
+}
+
+impl Display for FieldType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldType::Varint => write!(f, "Varint"),
+            FieldType::U16 => write!(f, "U16"),
+            FieldType::U8 => write!(f, "U8"),
+            FieldType::I64 => write!(f, "I64"),
+            FieldType::String => write!(f, "String"),
+            FieldType::Buffer { .. } => write!(f, "Buffer"),
+            FieldType::Array { elem_ty, .. } => write!(f, "Array<{}>", elem_ty),
+            FieldType::I32 => write!(f, "I32"),
+            FieldType::I8 => write!(f, "I8"),
+            FieldType::Bool => write!(f, "Bool"),
+            FieldType::I16 => write!(f, "I16"),
+            FieldType::F32 => write!(f, "F32"),
+            FieldType::F64 => write!(f, "F64"),
+            FieldType::Uuid => write!(f, "Uuid"),
+            FieldType::EntityMetadata => write!(f, "EntityMetadata"),
+            FieldType::Position => write!(f, "Position"),
+            FieldType::RestOfBuffer => write!(f, "RestOfBuffer"),
+            FieldType::Nbt => write!(f, "Nbt"),
+            FieldType::OptionalNbt => write!(f, "OptionalNbt"),
+            FieldType::Switch(_) => write!(f, "Switch"),
+            FieldType::Option(_) => write!(f, "Option"),
+            FieldType::Container(_) => write!(f, "Container"),
+            FieldType::Void => write!(f, "Void"),
+            FieldType::Slot => write!(f, "Slot"),
+            FieldType::ParticleData => write!(f, "ParticleData"),
+            FieldType::Bitfield => write!(f, "Bitfield"),
+            FieldType::TopBitSetTerminatedArray => write!(f, "TopBitSetTerminatedArray"),
+            FieldType::Tags => write!(f, "Tags"),
+            FieldType::SmeltingRecipe => write!(f, "SmeltingRecipe"),
+            FieldType::Ingredient => write!(f, "Ingredient"),
+        }
     }
 }

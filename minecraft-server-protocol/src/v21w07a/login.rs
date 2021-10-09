@@ -2,7 +2,8 @@
 #![allow(unused_imports)]
 
 use crate::types::*;
-use async_std::io::Cursor;
+use async_std::io::{prelude::*, Cursor};
+use async_trait::async_trait;
 use minecraft_server_protocol_derive::{ClientBoundPacket, ServerBoundPacket};
 use std::fmt::{Display, Formatter};
 
@@ -24,13 +25,12 @@ pub mod client {
     }
 
     /* TODO incomplete struct Success
-        #[derive(ClientBoundPacket)]
-        #[packet_id = 0x02]
-        pub struct Success {
-            // TODO pub uuid: Uuid,
-            pub username: StringField,
-        }
-    */
+    #[derive(ClientBoundPacket)]
+    #[packet_id = 0x02]
+    pub struct Success {
+        // TODO pub uuid: Uuid,
+        pub username: StringField,
+    }*/
 
     #[derive(ClientBoundPacket)]
     #[packet_id = 0x03]
@@ -64,11 +64,10 @@ pub mod server {
     }
 
     /* TODO incomplete struct LoginPluginResponse
-        #[derive(ServerBoundPacket)]
-        #[packet_id = 0x02]
-        pub struct LoginPluginResponse {
-            pub message_id: VarIntField,
-            // TODO pub data: Option(RestOfBuffer),
-        }
-    */
+    #[derive(ServerBoundPacket)]
+    #[packet_id = 0x02]
+    pub struct LoginPluginResponse {
+        pub message_id: VarIntField,
+        // TODO pub data: Option,
+    }*/
 }

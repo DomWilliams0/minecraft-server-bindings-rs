@@ -91,7 +91,11 @@ fn dew_it() -> Result<(), Box<dyn Error>> {
         path.push("minecraft-server-protocol/src");
 
         if !path.is_dir() {
-            return Err("could not find packets/src within out directory".into());
+            return Err(format!(
+                "could not find minecraft-server-protocol/src within out directory ({})",
+                path.display()
+            )
+            .into());
         }
 
         string.insert(0, 'v');
